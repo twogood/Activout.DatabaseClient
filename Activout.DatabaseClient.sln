@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Activout.DatabaseClient", "Activout.DatabaseClient\Activout.DatabaseClient.csproj", "{2624626B-405D-487C-9838-A26B051C8EEC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Activout.DatabaseClient.Test", "Activout.DatabaseClient.Test\Activout.DatabaseClient.Test.csproj", "{728605B9-E1DF-4108-B166-5326C94AF389}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Activout.DatabaseClient.Dapper", "Activout.DatabaseClient.Dapper\Activout.DatabaseClient.Dapper.csproj", "{051C84C3-4866-407D-81A3-81E52FD8DBC4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2624626B-405D-487C-9838-A26B051C8EEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2624626B-405D-487C-9838-A26B051C8EEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2624626B-405D-487C-9838-A26B051C8EEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2624626B-405D-487C-9838-A26B051C8EEC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{728605B9-E1DF-4108-B166-5326C94AF389}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{728605B9-E1DF-4108-B166-5326C94AF389}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{728605B9-E1DF-4108-B166-5326C94AF389}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{728605B9-E1DF-4108-B166-5326C94AF389}.Release|Any CPU.Build.0 = Release|Any CPU
+		{051C84C3-4866-407D-81A3-81E52FD8DBC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{051C84C3-4866-407D-81A3-81E52FD8DBC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{051C84C3-4866-407D-81A3-81E52FD8DBC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{051C84C3-4866-407D-81A3-81E52FD8DBC4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
