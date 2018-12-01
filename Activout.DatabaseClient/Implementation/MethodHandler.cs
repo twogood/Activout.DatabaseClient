@@ -69,8 +69,7 @@ namespace Activout.DatabaseClient.Implementation
                 var parameter = parameters[index];
                 var value = args[index];
 
-                var bind = parameter.GetCustomAttribute<BindAttribute>();
-                var parameterName = bind?.ParameterName ?? parameter.Name;
+                var parameterName = GetName(parameter);
 
                 var bindProperties = parameter.GetCustomAttribute<BindPropertiesAttribute>();
                 if (bindProperties == null)
@@ -79,11 +78,16 @@ namespace Activout.DatabaseClient.Implementation
                 }
                 else
                 {
+                    if (value == null)
+                    {
+                        throw new ArgumentNullException(parameter.Name,
+                            "Value of [BindProperties] parameter cannot be null.");
+                    }
+
                     var properties = value.GetType().GetProperties();
                     foreach (var property in properties)
                     {
-                        var propertyBind = property.GetCustomAttribute<BindAttribute>();
-                        var propertyName = propertyBind?.ParameterName ?? property.Name;
+                        var propertyName = GetName(property);
 
                         var propertyValue = property.GetValue(value);
                         statement.Parameters.Add(new QueryParameter(propertyName, propertyValue));
@@ -91,6 +95,18 @@ namespace Activout.DatabaseClient.Implementation
                     }
                 }
             }
+        }
+
+        private static string GetName(ParameterInfo parameter)
+        {
+            var bind = parameter.GetCustomAttribute<BindAttribute>();
+            return bind?.ParameterName ?? parameter.Name;
+        }
+
+        private static string GetName(MemberInfo member)
+        {
+            var bind = member.GetCustomAttribute<BindAttribute>();
+            return bind?.ParameterName ?? member.Name;
         }
     }
 }

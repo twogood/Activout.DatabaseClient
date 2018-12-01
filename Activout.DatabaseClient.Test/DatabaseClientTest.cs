@@ -62,15 +62,12 @@ namespace Activout.DatabaseClient.Test
         public SqliteConnection SqliteConnection { get; private set; }
     }
 
-
     public class UnitTest1 : IClassFixture<DatabaseFixture>
     {
-        private readonly DatabaseFixture _databaseFixture;
         private readonly IUserDao _userDao;
 
         public UnitTest1(DatabaseFixture databaseFixture)
         {
-            _databaseFixture = databaseFixture;
             _userDao = new DatabaseClientBuilder()
                 .With(new DapperDatabaseConnection(databaseFixture.SqliteConnection))
                 .With(new DapperGateway())
@@ -112,6 +109,18 @@ namespace Activout.DatabaseClient.Test
         }
 
         [Fact]
+        public void TestInsertObjectNull()
+        {
+            // Arrange
+            _userDao.CreateTable();
+
+            // Act
+            var exception = Assert.Throws<ArgumentNullException>(() => _userDao.InsertObject(null));
+
+            // Assert
+        }
+
+        [Fact]
         public void TestInsertObjectFull()
         {
             // Arrange
@@ -130,6 +139,22 @@ namespace Activout.DatabaseClient.Test
             Assert.NotNull(user);
             Assert.Equal(42, user.Id);
             Assert.Equal("foobar", user.Name);
+        }
+
+        [Fact]
+        public void TestInsertNull()
+        {
+            // Arrange
+            _userDao.CreateTable();
+            _userDao.InsertNamed(42, null);
+
+            // Act
+            var user = _userDao.GetUserById(42);
+
+            // Assert
+            Assert.NotNull(user);
+            Assert.Equal(42, user.Id);
+            Assert.Null(user.Name);
         }
 
         [Fact]
