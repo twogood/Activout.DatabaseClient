@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using Activout.DatabaseClient.Attributes;
@@ -9,7 +8,6 @@ using Activout.DatabaseClient.Dapper;
 using Activout.DatabaseClient.Implementation;
 using Microsoft.Data.Sqlite;
 using Xunit;
-using Xunit.Sdk;
 
 namespace Activout.DatabaseClient.Test
 {
@@ -101,7 +99,7 @@ namespace Activout.DatabaseClient.Test
             await _userDao.CreateTable();
 
             // Act + Assert
-            var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => _userDao.InsertObject(null));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => _userDao.InsertObject(null));
         }
 
         [Fact]
@@ -182,7 +180,7 @@ namespace Activout.DatabaseClient.Test
             // Arrange
 
             // Act + Assert
-            var exception = await Assert.ThrowsAnyAsync<DbException>(() => _userDao.SyntaxError());
+            await Assert.ThrowsAnyAsync<DbException>(() => _userDao.SyntaxError());
         }
     }
 }

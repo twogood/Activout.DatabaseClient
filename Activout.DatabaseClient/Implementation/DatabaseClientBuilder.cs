@@ -4,7 +4,7 @@ namespace Activout.DatabaseClient.Implementation
 {
     public class DatabaseClientBuilder : IDatabaseClientBuilder
     {
-        public static readonly IDuckTyping DefaultDuckTyping = new DuckTyping();
+        private static readonly IDuckTyping DefaultDuckTyping = new DuckTyping();
 
         private IDuckTyping _duckTyping = DefaultDuckTyping;
         private readonly DatabaseClientContext _context = new DatabaseClientContext();

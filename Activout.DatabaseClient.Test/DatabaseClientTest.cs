@@ -102,7 +102,7 @@ namespace Activout.DatabaseClient.Test
             _userDao.CreateTable();
 
             // Act
-            var exception = Assert.Throws<ArgumentNullException>(() => _userDao.InsertObject(null));
+            Assert.Throws<ArgumentNullException>(() => _userDao.InsertObject(null));
 
             // Assert
         }
@@ -185,7 +185,7 @@ namespace Activout.DatabaseClient.Test
             // Arrange
 
             // Act + Assert
-            var exception = Assert.ThrowsAny<DbException>(() => _userDao.SyntaxError());
+            Assert.ThrowsAny<DbException>(() => _userDao.SyntaxError());
         }
     }
 }

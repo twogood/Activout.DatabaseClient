@@ -1,5 +1,3 @@
-using System;
-
 namespace Activout.DatabaseClient.Attributes
 {
     public class SqlQueryAttribute : AbstractSqlAttribute

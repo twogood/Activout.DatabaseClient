@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -18,7 +17,7 @@ namespace Activout.DatabaseClient.Implementation
         private readonly bool _isUpdate;
         private readonly Type _effectiveType;
         private readonly bool _isAsync;
-        private ITaskConverter _taskConverter;
+        private readonly ITaskConverter _taskConverter;
 
         public MethodHandler(MethodInfo method, AbstractSqlAttribute sqlAttribute, DatabaseClientContext context)
         {
@@ -155,7 +154,7 @@ namespace Activout.DatabaseClient.Implementation
             }
         }
 
-        [SuppressMessage("csharpsquid", "S1523")]
+        [SuppressMessage("SonarCloud", "S1523")]
         private static IEnumerable<PropertyInfo> GetProperties(ParameterInfo parameter)
         {
             return parameter.ParameterType.GetProperties();
