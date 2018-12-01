@@ -84,7 +84,7 @@ namespace Activout.DatabaseClient.Implementation
                             "Value of [BindProperties] parameter cannot be null.");
                     }
 
-                    var properties = value.GetType().GetProperties();
+                    var properties = parameter.ParameterType.GetProperties();
                     foreach (var property in properties)
                     {
                         var propertyName = GetName(property);
