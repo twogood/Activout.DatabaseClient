@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Activout.DatabaseClient.Attributes;
 
 namespace Activout.DatabaseClient.Implementation
@@ -15,27 +17,47 @@ namespace Activout.DatabaseClient.Implementation
         private readonly bool _isResultEnumerable;
         private readonly bool _isUpdate;
         private readonly Type _effectiveType;
+        private readonly bool _isAsync;
+        private ITaskConverter _taskConverter;
 
         public MethodHandler(MethodInfo method, AbstractSqlAttribute sqlAttribute, DatabaseClientContext context)
         {
+            Type resultType;
             _method = method;
             _sqlAttribute = sqlAttribute;
             _isUpdate = _sqlAttribute is SqlUpdateAttribute;
             _context = context;
 
             var returnType = _method.ReturnType;
-
-            _isResultEnumerable = returnType.IsGenericType &&
-                                  returnType.Namespace == "System.Collections.Generic" &&
-                                  returnType.Name == "IEnumerable`1";
-
-            if (_isResultEnumerable)
+            if (returnType == typeof(Task))
             {
-                _effectiveType = returnType.GenericTypeArguments[0];
+                resultType = typeof(void);
+                _isAsync = true;
+            }
+            else if (returnType.BaseType == typeof(Task) && returnType.IsGenericType)
+            {
+                resultType = returnType.GenericTypeArguments[0];
+                _isAsync = true;
             }
             else
             {
-                _effectiveType = returnType;
+                resultType = returnType;
+                _isAsync = false;
+            }
+
+            _taskConverter = _context.TaskConverterFactory.CreateTaskConverter(resultType);
+
+            _isResultEnumerable = resultType.IsGenericType &&
+                                  resultType.Namespace == "System.Collections.Generic" &&
+                                  resultType.Name == "IEnumerable`1";
+
+            if (_isResultEnumerable)
+            {
+                _effectiveType = resultType.GenericTypeArguments[0];
+            }
+            else
+            {
+                _effectiveType = resultType;
             }
         }
 
@@ -49,17 +71,53 @@ namespace Activout.DatabaseClient.Implementation
 
             AddSqlStatementParameters(args, statement);
 
-            if (_isUpdate)
+            try
             {
-                return _context.Gateway.ExecuteAsync(statement).Result;
-            }
+                if (_isUpdate)
+                {
+                    return Execute(statement);
+                }
 
-            if (_isResultEnumerable)
+                if (_isResultEnumerable)
+                {
+                    return Query(statement);
+                }
+
+                return QueryFirstOrDefault(statement);
+            }
+            catch (AggregateException e)
             {
-                return _context.Gateway.QueryAsync(statement).Result;
+                throw e.InnerException;
             }
+        }
 
-            return _context.Gateway.QueryFirstOrDefaultAsync(statement).Result;
+        private object QueryFirstOrDefault(SqlStatement statement)
+        {
+            var task = _context.Gateway.QueryFirstOrDefaultAsync(statement);
+            return _isAsync ? _taskConverter.ConvertReturnType(task) : task.Result;
+        }
+
+        private object Query(SqlStatement statement)
+        {
+            var task = QueryAsync(statement);
+            return _isAsync ? _taskConverter.ConvertReturnType(task) : task.Result;
+        }
+
+        private async Task<object> QueryAsync(SqlStatement statement)
+        {
+            return CastEnumerable(await _context.Gateway.QueryAsync(statement).ConfigureAwait(false));
+        }
+
+        private object CastEnumerable(IEnumerable<object> enumerable)
+        {
+            var castMethod = typeof(Enumerable).GetMethod("Cast").MakeGenericMethod(_effectiveType);
+            return castMethod.Invoke(null, new object[] {enumerable});
+        }
+
+        private object Execute(SqlStatement statement)
+        {
+            var task = _context.Gateway.ExecuteAsync(statement);
+            return _isAsync ? task : (object) task.Result;
         }
 
         private void AddSqlStatementParameters(IReadOnlyList<object> args, SqlStatement statement)

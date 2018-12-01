@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 
@@ -41,14 +42,16 @@ namespace Activout.DatabaseClient.Dapper
         public async Task<int> ExecuteAsync(SqlStatement statement)
         {
             var connection = statement.GetDbConnection();
-            return await connection.ExecuteAsync(statement.Sql, statement.GetDynamicParameters());
+            return await connection.ExecuteAsync(statement.Sql, statement.GetDynamicParameters()).ConfigureAwait(false);
         }
 
         public async Task<IEnumerable<object>> QueryAsync(SqlStatement statement)
         {
             using (var connection = statement.GetDbConnection())
             {
-                return await connection.QueryAsync(statement.EffectiveType, statement.Sql, statement.GetDynamicParameters());
+                return await connection
+                    .QueryAsync(statement.EffectiveType, statement.Sql, statement.GetDynamicParameters())
+                    .ConfigureAwait(false);
             }
         }
 
@@ -57,7 +60,7 @@ namespace Activout.DatabaseClient.Dapper
             using (var connection = statement.GetDbConnection())
             {
                 return await connection.QueryFirstAsync(statement.EffectiveType, statement.Sql,
-                    statement.GetDynamicParameters());
+                    statement.GetDynamicParameters()).ConfigureAwait(false);
             }
         }
 
@@ -66,7 +69,7 @@ namespace Activout.DatabaseClient.Dapper
             using (var connection = statement.GetDbConnection())
             {
                 return await connection.QueryFirstOrDefaultAsync(statement.EffectiveType, statement.Sql,
-                    statement.GetDynamicParameters());
+                    statement.GetDynamicParameters()).ConfigureAwait(false);
             }
         }
     }

@@ -1,53 +1,51 @@
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading.Tasks;
 using Activout.DatabaseClient.Attributes;
 using Activout.DatabaseClient.Dapper;
 using Activout.DatabaseClient.Implementation;
 using Microsoft.Data.Sqlite;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Activout.DatabaseClient.Test
 {
-    public class User
-    {
-        [Bind("id")] public int Id { get; set; }
-        public string Name { get; set; }
-    }
-
-    public interface IUserDao
+    public interface IUserDaoAsync
     {
         [SqlUpdate("CREATE TABLE user (id INTEGER PRIMARY KEY, name VARCHAR)")]
-        void CreateTable();
+        Task CreateTable();
 
         [SqlUpdate("INSERT INTO user(id, name) VALUES (?, ?)")]
-        void InsertPositional(int id, string name);
+        Task InsertPositional(int id, string name);
 
         [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :name)")]
-        void InsertNamed([Bind("id")] int id, [Bind("name")] string name);
+        Task InsertNamed([Bind("id")] int id, [Bind("name")] string name);
 
         [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :Name)")]
-        void InsertObject([BindProperties] User user);
+        Task InsertObject([BindProperties] User user);
 
         [SqlUpdate("INSERT INTO user(id, name) VALUES (:user_id, :user_Name)")]
-        void InsertObjectFull([BindProperties] User user);
+        Task InsertObjectFull([BindProperties] User user);
 
         [SqlQuery("SELECT * FROM user ORDER BY name")]
-        IEnumerable<User> ListUsers();
+        Task<IEnumerable<User>> ListUsers();
 
         [SqlQuery("SELECT * FROM user WHERE id = :id")]
-        User GetUserById(int id);
+        Task<User> GetUserById(int id);
 
         [SqlUpdate("syntax error")]
-        void SyntaxError();
+        Task SyntaxError();
     }
 
-    public class DatabaseClientTest
-    {
-        private readonly IUserDao _userDao;
 
-        public DatabaseClientTest()
+    public class DatabaseClientAsyncTest
+    {
+        private readonly IUserDaoAsync _userDao;
+
+        public DatabaseClientAsyncTest()
         {
             var connectionString = new SqliteConnectionStringBuilder
             {
@@ -56,38 +54,39 @@ namespace Activout.DatabaseClient.Test
             var sqliteConnection = new SqliteConnection(connectionString);
 
             _userDao = new DatabaseClientBuilder()
+                .With(new TaskConverterFactory())
                 .With(new DapperDatabaseConnection(sqliteConnection))
                 .With(new DapperGateway())
-                .Build<IUserDao>();
+                .Build<IUserDaoAsync>();
         }
 
         [Fact]
-        public void TestCreateTable()
+        public async Task TestCreateTable()
         {
             // Arrange
-            _userDao.CreateTable();
+            await _userDao.CreateTable();
 
             // Act
-            var users = _userDao.ListUsers();
+            var users = await _userDao.ListUsers();
 
             // Assert
             Assert.Empty(users);
         }
 
         [Fact]
-        public void TestInsertObject()
+        public async Task TestInsertObject()
         {
             // Arrange
-            _userDao.CreateTable();
+            await _userDao.CreateTable();
 
             // Act
-            _userDao.InsertObject(new User
+            await _userDao.InsertObject(new User
             {
                 Id = 42,
                 Name = "foobar"
             });
 
-            var user = _userDao.GetUserById(42);
+            var user = await _userDao.GetUserById(42);
 
             // Assert
             Assert.NotNull(user);
@@ -96,31 +95,29 @@ namespace Activout.DatabaseClient.Test
         }
 
         [Fact]
-        public void TestInsertObjectNull()
+        public async Task TestInsertObjectNull()
         {
             // Arrange
-            _userDao.CreateTable();
+            await _userDao.CreateTable();
 
-            // Act
-            var exception = Assert.Throws<ArgumentNullException>(() => _userDao.InsertObject(null));
-
-            // Assert
+            // Act + Assert
+            var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => _userDao.InsertObject(null));
         }
 
         [Fact]
-        public void TestInsertObjectFull()
+        public async Task TestInsertObjectFull()
         {
             // Arrange
-            _userDao.CreateTable();
+            await _userDao.CreateTable();
 
             // Act
-            _userDao.InsertObjectFull(new User
+            await _userDao.InsertObjectFull(new User
             {
                 Id = 42,
                 Name = "foobar"
             });
 
-            var user = _userDao.GetUserById(42);
+            var user = await _userDao.GetUserById(42);
 
             // Assert
             Assert.NotNull(user);
@@ -129,14 +126,14 @@ namespace Activout.DatabaseClient.Test
         }
 
         [Fact]
-        public void TestInsertNull()
+        public async Task TestInsertNull()
         {
             // Arrange
-            _userDao.CreateTable();
-            _userDao.InsertNamed(42, null);
+            await _userDao.CreateTable();
+            await _userDao.InsertNamed(42, null);
 
             // Act
-            var user = _userDao.GetUserById(42);
+            var user = await _userDao.GetUserById(42);
 
             // Assert
             Assert.NotNull(user);
@@ -145,14 +142,14 @@ namespace Activout.DatabaseClient.Test
         }
 
         [Fact]
-        public void TestQuery()
+        public async Task TestQuery()
         {
             // Arrange
-            _userDao.CreateTable();
-            _userDao.InsertNamed(42, "foobar");
+            await _userDao.CreateTable();
+            await _userDao.InsertNamed(42, "foobar");
 
             // Act
-            var users = _userDao.ListUsers().ToList();
+            var users = (await _userDao.ListUsers()).ToList();
 
             // Assert
             Assert.Single(users);
@@ -164,14 +161,14 @@ namespace Activout.DatabaseClient.Test
         }
 
         [Fact]
-        public void TestQueryScalar()
+        public async Task TestQueryScalar()
         {
             // Arrange
-            _userDao.CreateTable();
-            _userDao.InsertNamed(42, "foobar");
+            await _userDao.CreateTable();
+            await _userDao.InsertNamed(42, "foobar");
 
             // Act
-            var user = _userDao.GetUserById(42);
+            var user = await _userDao.GetUserById(42);
 
             // Assert
             Assert.NotNull(user);
@@ -180,12 +177,12 @@ namespace Activout.DatabaseClient.Test
         }
 
         [Fact]
-        public void TestSyntaxError()
+        public async Task TestSyntaxError()
         {
             // Arrange
 
             // Act + Assert
-            var exception = Assert.ThrowsAny<DbException>(() => _userDao.SyntaxError());
+            var exception = await Assert.ThrowsAnyAsync<DbException>(() => _userDao.SyntaxError());
         }
     }
 }
