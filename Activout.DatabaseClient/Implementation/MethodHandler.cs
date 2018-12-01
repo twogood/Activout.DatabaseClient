@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Activout.DatabaseClient.Attributes;
 
@@ -84,8 +85,7 @@ namespace Activout.DatabaseClient.Implementation
                             "Value of [BindProperties] parameter cannot be null.");
                     }
 
-                    var properties = parameter.ParameterType.GetProperties();
-                    foreach (var property in properties)
+                    foreach (var property in GetProperties(parameter))
                     {
                         var propertyName = GetName(property);
 
@@ -95,6 +95,12 @@ namespace Activout.DatabaseClient.Implementation
                     }
                 }
             }
+        }
+
+        [SuppressMessage("csharpsquid", "S1523")]
+        private static IEnumerable<PropertyInfo> GetProperties(ParameterInfo parameter)
+        {
+            return parameter.ParameterType.GetProperties();
         }
 
         private static string GetName(ParameterInfo parameter)
