@@ -25,7 +25,7 @@ namespace Activout.DatabaseClient.Test
         void InsertPositional(int id, string name);
 
         [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :name)")]
-        void InsertNamed([Bind("id")] int id, [Bind("name")] string name);
+        void InsertNamed([Bind] int id, [Bind("name")] string name);
 
         [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :Name)")]
         void InsertObject([BindProperties] User user);
