@@ -53,15 +53,6 @@ namespace Activout.DatabaseClient.Dapper
             }
         }
 
-        public async Task<object> QueryFirstAsync(SqlStatement statement)
-        {
-            using (var connection = statement.GetDbConnection())
-            {
-                return await connection.QueryFirstAsync(statement.EffectiveType, statement.Sql,
-                    statement.GetDynamicParameters()).ConfigureAwait(false);
-            }
-        }
-
         public async Task<object> QueryFirstOrDefaultAsync(SqlStatement statement)
         {
             using (var connection = statement.GetDbConnection())
