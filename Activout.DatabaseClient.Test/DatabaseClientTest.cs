@@ -21,9 +21,6 @@ namespace Activout.DatabaseClient.Test
         [SqlUpdate("CREATE TABLE user (id INTEGER PRIMARY KEY, name VARCHAR)")]
         void CreateTable();
 
-        [SqlUpdate("INSERT INTO user(id, name) VALUES (?, ?)")]
-        void InsertPositional(int id, string name);
-
         [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :name)")]
         void InsertNamed([Bind] int id, [Bind("name")] string name);
 
