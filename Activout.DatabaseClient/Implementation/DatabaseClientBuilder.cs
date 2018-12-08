@@ -15,12 +15,6 @@ namespace Activout.DatabaseClient.Implementation
             return this;
         }
 
-        public IDatabaseClientBuilder With(IDatabaseConnection connection)
-        {
-            _context.Connection = connection;
-            return this;
-        }
-
         public IDatabaseClientBuilder With(IDatabaseGateway gateway)
         {
             _context.Gateway = gateway;

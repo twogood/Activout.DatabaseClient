@@ -40,8 +40,7 @@ public interface IUserDao
 
 
 _userDao = new DatabaseClientBuilder()
-    .With(new DapperDatabaseConnection(sqliteConnection))
-    .With(new DapperGateway())
+    .With(new DapperGateway(sqliteConnection))
     .Build<IUserDao>();
 
 _userDao.CreateTable();
@@ -75,8 +74,7 @@ public interface IUserDaoAsync
 
 
 _userDao = new DatabaseClientBuilder()
-    .With(new DapperDatabaseConnection(sqliteConnection))
-    .With(new DapperGateway())
+    .With(new DapperGateway(sqliteConnection))
     .Build<IUserDaoAsync>();
 
 await _userDao.CreateTable();

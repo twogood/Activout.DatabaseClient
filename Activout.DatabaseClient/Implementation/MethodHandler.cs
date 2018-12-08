@@ -62,7 +62,7 @@ namespace Activout.DatabaseClient.Implementation
 
         public object Call(object[] args)
         {
-            var statement = new SqlStatement(_context.Connection)
+            var statement = new SqlStatement
             {
                 Sql = _sqlAttribute.Sql,
                 EffectiveType = _effectiveType
