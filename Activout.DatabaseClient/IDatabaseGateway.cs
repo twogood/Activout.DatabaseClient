@@ -27,7 +27,6 @@ namespace Activout.DatabaseClient
     {
         Task<int> ExecuteAsync(SqlStatement statement);
         Task<IEnumerable<object>> QueryAsync(SqlStatement statement);
-        Task<object> QueryFirstAsync(SqlStatement statement);
         Task<object> QueryFirstOrDefaultAsync(SqlStatement statement);
     }
 }

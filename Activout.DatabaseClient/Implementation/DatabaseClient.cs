@@ -26,12 +26,7 @@ namespace Activout.DatabaseClient.Implementation
         {
             var method = _type.GetTypeInfo()
                 .GetDeclaredMethods(binder.Name)
-                .SingleOrDefault(mi => mi.GetParameters().Length == args.Length);
-            if (method == null)
-            {
-                result = null;
-                return false;
-            }
+                .Single(mi => mi.GetParameters().Length == args.Length);
 
             if (!_methodHandlers.TryGetValue(method, out var methodHandler))
             {

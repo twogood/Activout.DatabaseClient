@@ -2,7 +2,7 @@
 
 namespace Activout.DatabaseClient.Implementation
 {
-    internal class DuckTyping : IDuckTyping
+    public class DuckTyping : IDuckTyping
     {
         public TInterface DuckType<TInterface>(object originalDynamic) where TInterface : class
         {
