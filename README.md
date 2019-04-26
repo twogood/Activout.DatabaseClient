@@ -95,5 +95,9 @@ var user = await _userDao.GetUserById(42);
 ## Collaborate
 This project is still under development - participation welcome!
 
+## Related projects
+
+- [Activout.RestClient](https://github.com/twogood/Activout.RestClient) - Create a REST(ish) API client only by defining the C# interface you want.
+
 ## About Activout
 [Activout AB](http://activout.se) is a software company in Ronneby, Sweden.
