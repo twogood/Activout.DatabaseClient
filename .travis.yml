@@ -1,16 +1,18 @@
 language: csharp
 solution: Activout.DatabaseClient.sln
 mono: none
-dotnet: 2.1.500
+dotnet: 2.2.203
+dist: xenial
 install:
   - dotnet tool install --global dotnet-sonarscanner
 script:
   - dotnet build ./Activout.DatabaseClient/
-  - dotnet test ./Activout.DatabaseClient.Test/
-  - $HOME/.dotnet/tools/dotnet-sonarscanner begin /k:"Activout.DatabaseClient" /d:sonar.organization="activout" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$SONAR_TOKEN" /version:"$TRAVIS_BUILD_NUMBER-$TRAVIS_COMMIT"
+  - dotnet test --no-build ./Activout.DatabaseClient.Test/
+  - $HOME/.dotnet/tools/dotnet-sonarscanner begin /k:"Activout.DatabaseClient" /o:"activout" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$SONAR_TOKEN" /version:"$TRAVIS_BUILD_NUMBER-$TRAVIS_COMMIT"
   - dotnet build
   - $HOME/.dotnet/tools/dotnet-sonarscanner end /d:sonar.login="$SONAR_TOKEN"
 cache:
   directories:
     - $HOME/.nuget
     - $HOME/.sonar/cache
+    - /usr/share/dotnet/sdk/NuGetFallbackFolder
