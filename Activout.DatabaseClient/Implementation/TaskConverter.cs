@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
-using System.Linq.Expressions;
+using System;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -10,70 +7,57 @@ namespace Activout.DatabaseClient.Implementation
     /*
      * Convert from Task<object> to Task<T> where T is the Type
      * 
-     * Implemented by executing Task<object>.ContinueWith<T>(x => (T)x.Result) using reflection.
+     * Implemented by creating a TaskCompletionSource<T> and calling SetResult() using reflection.
      */
     internal class TaskConverter : ITaskConverter
     {
-        private static readonly Type ObjectTaskType = typeof(Task<object>);
-        private readonly MethodInfo _continueWith;
-        private readonly Delegate _lambda;
+        private readonly Type _type;
+        private readonly MethodInfo _setResultMethod;
+        private readonly MethodInfo _setExceptionMethod;
+        private readonly PropertyInfo _taskProperty;
 
         public TaskConverter(Type actualReturnType)
         {
-            _lambda = CreateLambda(actualReturnType);
-            _continueWith = GetContinueWithMethod(actualReturnType);
+            _type = typeof(TaskCompletionSource<>).MakeGenericType(actualReturnType);
+            _setResultMethod = _type.GetMethod("SetResult");
+            _setExceptionMethod = _type.GetMethod("SetException", new[] {typeof(Exception)});
+            _taskProperty = _type.GetProperty("Task");
         }
 
         public object ConvertReturnType<T>(Task<T> task) where T : class
         {
-            return _continueWith.Invoke(task, new object[] {_lambda});
+            var taskCompletionSource = Activator.CreateInstance(_type);
+
+            Task.Factory.StartNew(async () => await AsyncHelper(task, taskCompletionSource));
+
+            return GetTask(taskCompletionSource);
         }
 
-        private static MethodInfo GetContinueWithMethod(Type actualReturnType)
+        private async Task AsyncHelper<T>(Task<T> task, object taskCompletionSource)
         {
-            // Inspired by https://stackoverflow.com/a/3632196/20444
-            var baseFuncType = typeof(Func<,>);
-            var continueWithMethod = ObjectTaskType.GetMethods()
-                .Where(x => x.Name == nameof(Task.ContinueWith) && x.GetParameters().Length == 1)
-                .Select(x => new {M = x, P = x.GetParameters()})
-                .Where(x => x.P[0].ParameterType.IsGenericType &&
-                            x.P[0].ParameterType.GetGenericTypeDefinition() == baseFuncType)
-                .Select(x => new {x.M, A = x.P[0].ParameterType.GetGenericArguments()})
-                .Where(x => x.A[0].IsGenericType
-                            && x.A[0].GetGenericTypeDefinition() == typeof(Task<>))
-                .Select(x => x.M)
-                .SingleOrDefault();
-            Debug.Assert(continueWithMethod != null, nameof(continueWithMethod) + " != null");
-            return continueWithMethod.MakeGenericMethod(actualReturnType);
+            try
+            {
+                SetResult(taskCompletionSource, await task);
+            }
+            catch (Exception e)
+            {
+                SetException(taskCompletionSource, e);
+            }
         }
 
-        private static Delegate CreateLambda(Type actualReturnType)
+        private object GetTask(object taskCompletionSource)
         {
-            var constantExpression = Expression.Parameter(ObjectTaskType);
-            var propertyExpression = Expression.Property(constantExpression, "Result");
-            var conversion = Expression.Convert(propertyExpression, actualReturnType);
-
-            var lambdaMethod = GetLambdaMethod() ??
-                               throw new NullReferenceException("Failed to get Expression.Lambda method");
-            var lambda = InvokeLambdaMethod(lambdaMethod, conversion, constantExpression);
-            return lambda.Compile();
+            return _taskProperty.GetValue(taskCompletionSource);
         }
 
-        private static LambdaExpression InvokeLambdaMethod(MethodBase lambdaMethod, UnaryExpression expression,
-            ParameterExpression parameter)
+        private void SetException(object taskCompletionSource, Exception e)
         {
-            return (LambdaExpression) lambdaMethod.Invoke(null, new object[] {expression, new[] {parameter}});
+            _setExceptionMethod.Invoke(taskCompletionSource, new object[] {e});
         }
 
-        private static MethodInfo GetLambdaMethod()
+        private void SetResult(object taskCompletionSource, object result)
         {
-            return typeof(Expression)
-                .GetMethods()
-                .Single(x => x.Name == nameof(Expression.Lambda)
-                             && !x.IsGenericMethod
-                             && x.GetParameters().Length == 2
-                             && x.GetParameters()[0].ParameterType == typeof(Expression)
-                             && x.GetParameters()[1].ParameterType == typeof(ParameterExpression[]));
+            _setResultMethod.Invoke(taskCompletionSource, new[] {result});
         }
     }
 }

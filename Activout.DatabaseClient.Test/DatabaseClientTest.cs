@@ -28,7 +28,7 @@ namespace Activout.DatabaseClient.Test
         void InsertObject([BindProperties] User user);
 
         [SqlUpdate("INSERT INTO user(id, name) VALUES (:user_id, :user_Name)")]
-        void InsertObjectFull([BindProperties] User user);
+        int InsertObjectFull([BindProperties] User user);
 
         [SqlQuery("SELECT * FROM user ORDER BY name")]
         IEnumerable<User> ListUsers();
@@ -111,7 +111,7 @@ namespace Activout.DatabaseClient.Test
             _userDao.CreateTable();
 
             // Act
-            _userDao.InsertObjectFull(new User
+            var affectedRowCount = _userDao.InsertObjectFull(new User
             {
                 Id = 42,
                 Name = "foobar"
@@ -120,6 +120,7 @@ namespace Activout.DatabaseClient.Test
             var user = _userDao.GetUserById(42);
 
             // Assert
+            Assert.Equal(1, affectedRowCount);
             Assert.NotNull(user);
             Assert.Equal(42, user.Id);
             Assert.Equal("foobar", user.Name);

@@ -23,7 +23,7 @@ namespace Activout.DatabaseClient.Test
         Task InsertObject([BindProperties] User user);
 
         [SqlUpdate("INSERT INTO user(id, name) VALUES (:user_id, :user_Name)")]
-        Task InsertObjectFull([BindProperties] User user);
+        Task<int> InsertObjectFull([BindProperties] User user);
 
         [SqlQuery("SELECT * FROM user ORDER BY name")]
         Task<IEnumerable<User>> ListUsers();
@@ -31,8 +31,11 @@ namespace Activout.DatabaseClient.Test
         [SqlQuery("SELECT * FROM user WHERE id = :id")]
         Task<User> GetUserById(int id);
 
+        [SqlQuery("syntax error")]
+        Task<User> SqlQuerySyntaxError();
+
         [SqlUpdate("syntax error")]
-        Task SyntaxError();
+        Task SqlUpdateSyntaxError();
     }
 
 
@@ -105,7 +108,7 @@ namespace Activout.DatabaseClient.Test
             await _userDao.CreateTable();
 
             // Act
-            await _userDao.InsertObjectFull(new User
+            var affectedRowCount = await _userDao.InsertObjectFull(new User
             {
                 Id = 42,
                 Name = "foobar"
@@ -114,6 +117,7 @@ namespace Activout.DatabaseClient.Test
             var user = await _userDao.GetUserById(42);
 
             // Assert
+            Assert.Equal(1, affectedRowCount);
             Assert.NotNull(user);
             Assert.Equal(42, user.Id);
             Assert.Equal("foobar", user.Name);
@@ -171,12 +175,21 @@ namespace Activout.DatabaseClient.Test
         }
 
         [Fact]
-        public async Task TestSyntaxError()
+        public async Task TestSqlQuerySyntaxError()
         {
             // Arrange
 
             // Act + Assert
-            await Assert.ThrowsAnyAsync<DbException>(() => _userDao.SyntaxError());
+            await Assert.ThrowsAnyAsync<DbException>(() => _userDao.SqlQuerySyntaxError());
+        }
+
+        [Fact]
+        public async Task TestSqlUpdateSyntaxError()
+        {
+            // Arrange
+
+            // Act + Assert
+            await Assert.ThrowsAnyAsync<DbException>(() => _userDao.SqlUpdateSyntaxError());
         }
     }
 }
