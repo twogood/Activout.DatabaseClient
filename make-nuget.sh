@@ -36,3 +36,7 @@ pack "Activout.DatabaseClient.Dapper/Activout.DatabaseClient.Dapper.csproj" \
 	"Activout Database Client - Dapper backend" \
 	"Dapper Backend for Activout.DatabaseClient."
 
+
+echo "Markdown URL:"
+echo "https://raw.githubusercontent.com/twogood/Activout.DatabaseClient/master/README.md"
+
