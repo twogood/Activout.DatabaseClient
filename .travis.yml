@@ -2,7 +2,7 @@ language: csharp
 solution: Activout.DatabaseClient.sln
 mono: none
 dotnet: 2.2.203
-dist: xenial
+dist: focal
 install:
   - dotnet tool install --global dotnet-sonarscanner
 script:
