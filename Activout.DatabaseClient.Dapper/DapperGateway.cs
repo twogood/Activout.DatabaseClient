@@ -26,7 +26,10 @@ namespace Activout.DatabaseClient.Dapper
         public DapperGateway(IDbConnection dbConnection)
         {
             _dbConnection = dbConnection;
-            _dbConnection.Open();
+            if (_dbConnection.State == ConnectionState.Closed)
+            {
+                _dbConnection.Open();
+            }
         }
 
         public async Task<int> ExecuteAsync(SqlStatement statement)
