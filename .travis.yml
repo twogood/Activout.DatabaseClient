@@ -1,7 +1,7 @@
 language: csharp
 solution: Activout.DatabaseClient.sln
 mono: none
-dotnet: 2.2.203
+dotnet: 3.1.402
 dist: bionic
 install:
   - dotnet tool install --global dotnet-sonarscanner
