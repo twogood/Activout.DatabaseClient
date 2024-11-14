@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="ImpromptuInterface" Version="7.0.1" />
+      <PackageReference Include="ImpromptuInterface" Version="8.0.4" />
     </ItemGroup>
 
 </Project>

@@ -1,0 +1,41 @@
+name: .NET
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: [ '9.0.x' ]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup dotnet ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v4
+        id: stepid
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+      #      - name: Create temporary global.json
+      #        run: echo '{"sdk":{"version":"${{ steps.stepid.outputs.dotnet-version }}"}}' > ./global.json
+      - name: Display dotnet version
+        run: dotnet --version
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --no-restore
+      - name: Test
+        timeout-minutes: 2
+        run: dotnet test --no-build --verbosity normal --blame-hang-timeout 45s --blame-hang-dump-type full
+      - name: Archive test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: TestResults
+          path: |
+            /home/runner/work/Activout.DatabaseClient/Activout.DatabaseClient/Activout.DatabaseClient.Test/TestResults/
