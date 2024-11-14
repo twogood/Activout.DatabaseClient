@@ -1,8 +1,5 @@
 # Activout Database Client
 Create a database client only by defining the C# interface you want. Uses Dapper for object mapping.
-[![Build Status](https://travis-ci.com/twogood/Activout.DatabaseClient.svg?branch=master)](https://travis-ci.com/twogood/Activout.DatabaseClient)
-[![SonarCloud](https://sonarcloud.io/api/project_badges/measure?project=Activout.DatabaseClient&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=Activout.DatabaseClient)
-[![NuGet Badge](https://buildstats.info/nuget/Activout.DatabaseClient)](https://www.nuget.org/packages/Activout.DatabaseClient/)
 
 Create a Database Access Object (DAO) defining the C# interface you want and writing the SQL query.
 *Shamelessly inspired by [Jdbi Declarative API](http://jdbi.org/#_declarative_api).* 
