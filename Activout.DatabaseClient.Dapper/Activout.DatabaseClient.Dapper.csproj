@@ -3,14 +3,16 @@
     <PropertyGroup>
         <LangVersion>default</LangVersion>
         <TargetFramework>net8.0</TargetFramework>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Dapper" Version="2.1.35" />
+        <PackageReference Include="Dapper" Version="2.1.35"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Activout.DatabaseClient\Activout.DatabaseClient.csproj" />
+        <ProjectReference Include="..\Activout.DatabaseClient\Activout.DatabaseClient.csproj"/>
+        <None Include="README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
 </Project>

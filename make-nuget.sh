@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-cd `dirname $0`
+cd "$(dirname "$0")" || exit 1
 VERSION=$1
 if [ -z "$VERSION" ]; then
 	echo "Missing version on command line!" >&2
@@ -27,6 +27,8 @@ pack()
 		--include-symbols \
 		--include-source \
 		"$_CSPROJ"
+		
+		ls -1 "$(dirname "$_CSPROJ")"/bin/Release/*."$VERSION".*nupkg
 }
 
 pack "Activout.DatabaseClient/Activout.DatabaseClient.csproj" \
@@ -35,8 +37,3 @@ pack "Activout.DatabaseClient/Activout.DatabaseClient.csproj" \
 pack "Activout.DatabaseClient.Dapper/Activout.DatabaseClient.Dapper.csproj" \
 	"Activout Database Client - Dapper backend" \
 	"Dapper Backend for Activout.DatabaseClient."
-
-
-echo "Markdown URL:"
-echo "https://raw.githubusercontent.com/twogood/Activout.DatabaseClient/master/README.md"
-
