@@ -2,7 +2,7 @@ namespace Activout.DatabaseClient.Implementation
 {
     public class DatabaseClientContext
     {
-        private static readonly ITaskConverterFactory DefaultTaskConverterFactory = new TaskConverterFactory();
+        private static readonly ITaskConverterFactory DefaultTaskConverterFactory = new TaskConverter3Factory();
 
         public IDatabaseGateway Gateway { get; set; }
         public ITaskConverterFactory TaskConverterFactory { get; set; } = DefaultTaskConverterFactory;

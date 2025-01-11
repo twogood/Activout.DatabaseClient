@@ -9,6 +9,7 @@ namespace Activout.DatabaseClient.Implementation
      * 
      * Implemented by creating a TaskCompletionSource<T> and calling SetResult() using reflection.
      */
+    [Obsolete("Use TaskConverter3Factory and TaskConverter3 instead")]
     internal class TaskConverter : ITaskConverter
     {
         private readonly Type _type;
@@ -24,7 +25,7 @@ namespace Activout.DatabaseClient.Implementation
             _taskProperty = _type.GetProperty("Task");
         }
 
-        public object ConvertReturnType<T>(Task<T> task) where T : class
+        public object ConvertReturnType(Task<object> task)
         {
             var taskCompletionSource = Activator.CreateInstance(_type);
 
