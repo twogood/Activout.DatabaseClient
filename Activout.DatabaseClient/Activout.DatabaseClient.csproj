@@ -3,10 +3,12 @@
     <PropertyGroup>
         <LangVersion>default</LangVersion>
         <TargetFramework>net8.0</TargetFramework>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="ImpromptuInterface" Version="8.0.4" />
+        <PackageReference Include="ImpromptuInterface" Version="8.0.4"/>
+        <None Include="README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
 </Project>
