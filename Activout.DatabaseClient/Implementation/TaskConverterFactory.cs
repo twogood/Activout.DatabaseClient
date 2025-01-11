@@ -2,6 +2,7 @@
 
 namespace Activout.DatabaseClient.Implementation
 {
+    [Obsolete("Use TaskConverterFactory3 instead")]
     public class TaskConverterFactory : ITaskConverterFactory
     {
         public ITaskConverter CreateTaskConverter(Type actualReturnType)

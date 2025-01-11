@@ -52,7 +52,7 @@ namespace Activout.DatabaseClient.Test
             var sqliteConnection = new SqliteConnection(connectionString);
 
             _userDao = new DatabaseClientBuilder()
-                .With(new TaskConverterFactory())
+                .With(new TaskConverter3Factory())
                 .With(new DapperGateway(sqliteConnection))
                 .Build<IUserDaoAsync>();
         }
