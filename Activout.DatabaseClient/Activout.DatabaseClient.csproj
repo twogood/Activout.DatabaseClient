@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="ImpromptuInterface" Version="8.0.4"/>
+        <PackageReference Include="ImpromptuInterface" Version="8.0.6"/>
         <None Include="README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
