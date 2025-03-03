@@ -1,7 +1,6 @@
-﻿namespace Activout.DatabaseClient
+﻿namespace Activout.DatabaseClient;
+
+public interface IDuckTyping
 {
-    public interface IDuckTyping
-    {
-        TInterface DuckType<TInterface>(object originalDynamic) where TInterface : class;
-    }
+    TInterface DuckType<TInterface>(object originalDynamic) where TInterface : class;
 }
