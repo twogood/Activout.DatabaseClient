@@ -7,6 +7,8 @@
         <LangVersion>default</LangVersion>
 
         <TargetFramework>net8.0</TargetFramework>
+
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>

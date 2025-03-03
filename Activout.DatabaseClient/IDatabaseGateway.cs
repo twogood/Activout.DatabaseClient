@@ -4,29 +4,19 @@ using System.Threading.Tasks;
 
 namespace Activout.DatabaseClient
 {
-    public class QueryParameter
-    {
-        public QueryParameter(string name, object value)
-        {
-            Name = name;
-            Value = value;
-        }
-
-        public string Name { get; }
-        public object Value { get; }
-    }
+    public record QueryParameter(string Name, object? Value);
 
     public class SqlStatement
     {
-        public string Sql { get; set; }
+        public required string Sql { get; init; }
         public IList<QueryParameter> Parameters { get; } = new List<QueryParameter>();
-        public Type EffectiveType { get; set; }
+        public required Type EffectiveType { get; init; }
     }
 
     public interface IDatabaseGateway
     {
         Task<int> ExecuteAsync(SqlStatement statement);
         Task<IEnumerable<object>> QueryAsync(SqlStatement statement);
-        Task<object> QueryFirstOrDefaultAsync(SqlStatement statement);
+        Task<object?> QueryFirstOrDefaultAsync(SqlStatement statement);
     }
 }

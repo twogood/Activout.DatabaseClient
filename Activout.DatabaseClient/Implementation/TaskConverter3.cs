@@ -9,14 +9,14 @@ namespace Activout.DatabaseClient.Implementation;
 public class TaskConverter3<T> : ITaskConverter
 {
     [StackTraceHidden]
-    public object ConvertReturnType(Task<object> task)
+    public object? ConvertReturnType(Task<object?> task)
     {
         return ConvertReturnTypeImpl(task);
     }
 
     [StackTraceHidden]
-    private static async Task<T> ConvertReturnTypeImpl(Task<object> task)
+    private static async Task<T?>? ConvertReturnTypeImpl(Task<object?> task)
     {
-        return (T)await task;
+        return (T?)await task;
     }
 }

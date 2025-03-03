@@ -13,16 +13,16 @@ namespace Activout.DatabaseClient.Test
     public class User
     {
         [Bind("id")] public int Id { get; set; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 
     public interface IUserDao
     {
-        [SqlUpdate("CREATE TABLE user (id INTEGER PRIMARY KEY, name VARCHAR)")]
+        [SqlUpdate("CREATE TABLE user (id INTEGER PRIMARY KEY, name VARCHAR(255))")]
         void CreateTable();
 
         [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @name)")]
-        void InsertNamed([Bind] int id, [Bind("name")] string name);
+        void InsertNamed([Bind] int id, [Bind("name")] string? name);
 
         [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
         void InsertObject([BindProperties] User user);
@@ -99,7 +99,7 @@ namespace Activout.DatabaseClient.Test
             _userDao.CreateTable();
 
             // Act
-            Assert.Throws<ArgumentNullException>(() => _userDao.InsertObject(null));
+            Assert.Throws<ArgumentNullException>(() => _userDao.InsertObject(null!));
 
             // Assert
         }

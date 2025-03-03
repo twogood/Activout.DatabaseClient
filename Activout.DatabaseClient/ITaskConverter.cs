@@ -4,6 +4,6 @@ namespace Activout.DatabaseClient
 {
     public interface ITaskConverter
     {
-        object ConvertReturnType(Task<object> task);
+        object? ConvertReturnType(Task<object?> task);
     }
 }

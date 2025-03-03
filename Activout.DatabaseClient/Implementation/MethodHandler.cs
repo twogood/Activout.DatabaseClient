@@ -17,7 +17,7 @@ namespace Activout.DatabaseClient.Implementation
         private readonly bool _isUpdate;
         private readonly Type _effectiveType;
         private readonly bool _isAsync;
-        private readonly ITaskConverter _taskConverter;
+        private readonly ITaskConverter? _taskConverter;
 
         public MethodHandler(MethodInfo method, AbstractSqlAttribute sqlAttribute, DatabaseClientContext context)
         {
@@ -44,11 +44,13 @@ namespace Activout.DatabaseClient.Implementation
                 _isAsync = false;
             }
 
-            _taskConverter = _context.TaskConverterFactory.CreateTaskConverter(resultType);
+            if (_isAsync)
+            {
+                _taskConverter = _context.TaskConverterFactory.CreateTaskConverter(resultType);
+            }
 
-            _isResultEnumerable = resultType.IsGenericType &&
-                                  resultType.Namespace == "System.Collections.Generic" &&
-                                  resultType.Name == "IEnumerable`1";
+            _isResultEnumerable = resultType is
+                { IsGenericType: true, Namespace: "System.Collections.Generic", Name: "IEnumerable`1" };
 
             if (_isResultEnumerable)
             {
@@ -60,7 +62,7 @@ namespace Activout.DatabaseClient.Implementation
             }
         }
 
-        public object Call(object[] args)
+        public object? Call(object?[] args)
         {
             var statement = new SqlStatement
             {
@@ -86,40 +88,40 @@ namespace Activout.DatabaseClient.Implementation
             }
             catch (AggregateException e)
             {
-                throw e.InnerException;
+                throw e.InnerException ?? e;
             }
         }
 
-        private object QueryFirstOrDefault(SqlStatement statement)
+        private object? QueryFirstOrDefault(SqlStatement statement)
         {
             var task = _context.Gateway.QueryFirstOrDefaultAsync(statement);
-            return _isAsync ? _taskConverter.ConvertReturnType(task) : task.Result;
+            return _isAsync ? _taskConverter!.ConvertReturnType(task) : task.Result;
         }
 
-        private object Query(SqlStatement statement)
+        private object? Query(SqlStatement statement)
         {
             var task = QueryAsync(statement);
-            return _isAsync ? _taskConverter.ConvertReturnType(task) : task.Result;
+            return _isAsync ? _taskConverter!.ConvertReturnType(task) : task.Result;
         }
 
-        private async Task<object> QueryAsync(SqlStatement statement)
+        private async Task<object?> QueryAsync(SqlStatement statement)
         {
             return CastEnumerable(await _context.Gateway.QueryAsync(statement).ConfigureAwait(false));
         }
 
-        private object CastEnumerable(IEnumerable<object> enumerable)
+        private object? CastEnumerable(IEnumerable<object> enumerable)
         {
-            var castMethod = typeof(Enumerable).GetMethod("Cast").MakeGenericMethod(_effectiveType);
-            return castMethod.Invoke(null, new object[] { enumerable });
+            var castMethod = typeof(Enumerable).GetMethod("Cast")!.MakeGenericMethod(_effectiveType);
+            return castMethod.Invoke(null, [enumerable]);
         }
 
         private object Execute(SqlStatement statement)
         {
             var task = _context.Gateway.ExecuteAsync(statement);
-            return _isAsync ? task : (object)task.Result;
+            return _isAsync ? task : task.Result;
         }
 
-        private void AddSqlStatementParameters(IReadOnlyList<object> args, SqlStatement statement)
+        private void AddSqlStatementParameters(object?[] args, SqlStatement statement)
         {
             var parameters = _method.GetParameters();
             for (var index = 0; index < parameters.Length; index++)
@@ -163,7 +165,9 @@ namespace Activout.DatabaseClient.Implementation
         private static string GetName(ParameterInfo parameter)
         {
             var bind = parameter.GetCustomAttribute<BindAttribute>();
-            return bind?.ParameterName ?? parameter.Name;
+            return bind?.ParameterName ??
+                   parameter.Name ??
+                   throw new InvalidOperationException("Parameter name is null.");
         }
 
         private static string GetName(MemberInfo member)
