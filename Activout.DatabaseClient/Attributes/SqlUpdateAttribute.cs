@@ -1,9 +1,8 @@
-namespace Activout.DatabaseClient.Attributes
+namespace Activout.DatabaseClient.Attributes;
+
+public class SqlUpdateAttribute : AbstractSqlAttribute
 {
-    public class SqlUpdateAttribute : AbstractSqlAttribute
+    public SqlUpdateAttribute(string sql) : base(sql)
     {
-        public SqlUpdateAttribute(string sql) : base(sql)
-        {
-        }
     }
 }

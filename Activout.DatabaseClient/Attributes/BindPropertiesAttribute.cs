@@ -1,9 +1,8 @@
 using System;
 
-namespace Activout.DatabaseClient.Attributes
+namespace Activout.DatabaseClient.Attributes;
+
+[AttributeUsage(AttributeTargets.Parameter)]
+public class BindPropertiesAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public class BindPropertiesAttribute : Attribute
-    {
-    }
 }

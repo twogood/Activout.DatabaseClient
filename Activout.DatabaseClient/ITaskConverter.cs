@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace Activout.DatabaseClient
+namespace Activout.DatabaseClient;
+
+public interface ITaskConverter
 {
-    public interface ITaskConverter
-    {
-        object? ConvertReturnType(Task<object?> task);
-    }
+    object? ConvertReturnType(Task<object?> task);
 }

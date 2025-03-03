@@ -8,182 +8,181 @@ using Activout.DatabaseClient.Implementation;
 using Microsoft.Data.Sqlite;
 using Xunit;
 
-namespace Activout.DatabaseClient.Test
+namespace Activout.DatabaseClient.Test;
+
+public class User
 {
-    public class User
+    [Bind("id")] public int Id { get; set; }
+    public string? Name { get; set; }
+}
+
+public interface IUserDao
+{
+    [SqlUpdate("CREATE TABLE user (id INTEGER PRIMARY KEY, name VARCHAR(255))")]
+    void CreateTable();
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @name)")]
+    void InsertNamed([Bind] int id, [Bind("name")] string? name);
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    void InsertObject([BindProperties] User user);
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@user_id, @user_Name)")]
+    int InsertObjectFull([BindProperties] User user);
+
+    [SqlQuery("SELECT * FROM user ORDER BY name")]
+    IEnumerable<User> ListUsers();
+
+    [SqlQuery("SELECT * FROM user WHERE id = @id")]
+    User GetUserById(int id);
+
+    [SqlUpdate("syntax error")]
+    void SyntaxError();
+}
+
+public class DatabaseClientTest
+{
+    private readonly IUserDao _userDao;
+
+    public DatabaseClientTest()
     {
-        [Bind("id")] public int Id { get; set; }
-        public string? Name { get; set; }
+        var connectionString = new SqliteConnectionStringBuilder
+        {
+            DataSource = ":memory:"
+        }.ConnectionString;
+        var sqliteConnection = new SqliteConnection(connectionString);
+
+        _userDao = new DatabaseClientBuilder()
+            .With(new DuckTyping())
+            .With(new DapperGateway(sqliteConnection))
+            .Build<IUserDao>();
     }
 
-    public interface IUserDao
+    [Fact]
+    public void TestCreateTable()
     {
-        [SqlUpdate("CREATE TABLE user (id INTEGER PRIMARY KEY, name VARCHAR(255))")]
-        void CreateTable();
+        // Arrange
+        _userDao.CreateTable();
 
-        [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @name)")]
-        void InsertNamed([Bind] int id, [Bind("name")] string? name);
+        // Act
+        var users = _userDao.ListUsers();
 
-        [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
-        void InsertObject([BindProperties] User user);
-
-        [SqlUpdate("INSERT INTO user(id, name) VALUES (@user_id, @user_Name)")]
-        int InsertObjectFull([BindProperties] User user);
-
-        [SqlQuery("SELECT * FROM user ORDER BY name")]
-        IEnumerable<User> ListUsers();
-
-        [SqlQuery("SELECT * FROM user WHERE id = @id")]
-        User GetUserById(int id);
-
-        [SqlUpdate("syntax error")]
-        void SyntaxError();
+        // Assert
+        Assert.Empty(users);
     }
 
-    public class DatabaseClientTest
+    [Fact]
+    public void TestInsertObject()
     {
-        private readonly IUserDao _userDao;
+        // Arrange
+        _userDao.CreateTable();
 
-        public DatabaseClientTest()
+        // Act
+        _userDao.InsertObject(new User
         {
-            var connectionString = new SqliteConnectionStringBuilder
-            {
-                DataSource = ":memory:"
-            }.ConnectionString;
-            var sqliteConnection = new SqliteConnection(connectionString);
+            Id = 42,
+            Name = "foobar"
+        });
 
-            _userDao = new DatabaseClientBuilder()
-                .With(new DuckTyping())
-                .With(new DapperGateway(sqliteConnection))
-                .Build<IUserDao>();
-        }
+        var user = _userDao.GetUserById(42);
 
-        [Fact]
-        public void TestCreateTable()
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(42, user.Id);
+        Assert.Equal("foobar", user.Name);
+    }
+
+    [Fact]
+    public void TestInsertObjectNull()
+    {
+        // Arrange
+        _userDao.CreateTable();
+
+        // Act
+        Assert.Throws<ArgumentNullException>(() => _userDao.InsertObject(null!));
+
+        // Assert
+    }
+
+    [Fact]
+    public void TestInsertObjectFull()
+    {
+        // Arrange
+        _userDao.CreateTable();
+
+        // Act
+        var affectedRowCount = _userDao.InsertObjectFull(new User
         {
-            // Arrange
-            _userDao.CreateTable();
+            Id = 42,
+            Name = "foobar"
+        });
 
-            // Act
-            var users = _userDao.ListUsers();
+        var user = _userDao.GetUserById(42);
 
-            // Assert
-            Assert.Empty(users);
-        }
+        // Assert
+        Assert.Equal(1, affectedRowCount);
+        Assert.NotNull(user);
+        Assert.Equal(42, user.Id);
+        Assert.Equal("foobar", user.Name);
+    }
 
-        [Fact]
-        public void TestInsertObject()
-        {
-            // Arrange
-            _userDao.CreateTable();
+    [Fact]
+    public void TestInsertNull()
+    {
+        // Arrange
+        _userDao.CreateTable();
+        _userDao.InsertNamed(42, null);
 
-            // Act
-            _userDao.InsertObject(new User
-            {
-                Id = 42,
-                Name = "foobar"
-            });
+        // Act
+        var user = _userDao.GetUserById(42);
 
-            var user = _userDao.GetUserById(42);
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(42, user.Id);
+        Assert.Null(user.Name);
+    }
 
-            // Assert
-            Assert.NotNull(user);
-            Assert.Equal(42, user.Id);
-            Assert.Equal("foobar", user.Name);
-        }
+    [Fact]
+    public void TestQuery()
+    {
+        // Arrange
+        _userDao.CreateTable();
+        _userDao.InsertNamed(42, "foobar");
 
-        [Fact]
-        public void TestInsertObjectNull()
-        {
-            // Arrange
-            _userDao.CreateTable();
+        // Act
+        var users = _userDao.ListUsers().ToList();
 
-            // Act
-            Assert.Throws<ArgumentNullException>(() => _userDao.InsertObject(null!));
+        // Assert
+        Assert.Single(users);
 
-            // Assert
-        }
+        var user = users.Single();
+        Assert.NotNull(user);
+        Assert.Equal(42, user.Id);
+        Assert.Equal("foobar", user.Name);
+    }
 
-        [Fact]
-        public void TestInsertObjectFull()
-        {
-            // Arrange
-            _userDao.CreateTable();
+    [Fact]
+    public void TestQueryScalar()
+    {
+        // Arrange
+        _userDao.CreateTable();
+        _userDao.InsertNamed(42, "foobar");
 
-            // Act
-            var affectedRowCount = _userDao.InsertObjectFull(new User
-            {
-                Id = 42,
-                Name = "foobar"
-            });
+        // Act
+        var user = _userDao.GetUserById(42);
 
-            var user = _userDao.GetUserById(42);
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(42, user.Id);
+        Assert.Equal("foobar", user.Name);
+    }
 
-            // Assert
-            Assert.Equal(1, affectedRowCount);
-            Assert.NotNull(user);
-            Assert.Equal(42, user.Id);
-            Assert.Equal("foobar", user.Name);
-        }
+    [Fact]
+    public void TestSyntaxError()
+    {
+        // Arrange
 
-        [Fact]
-        public void TestInsertNull()
-        {
-            // Arrange
-            _userDao.CreateTable();
-            _userDao.InsertNamed(42, null);
-
-            // Act
-            var user = _userDao.GetUserById(42);
-
-            // Assert
-            Assert.NotNull(user);
-            Assert.Equal(42, user.Id);
-            Assert.Null(user.Name);
-        }
-
-        [Fact]
-        public void TestQuery()
-        {
-            // Arrange
-            _userDao.CreateTable();
-            _userDao.InsertNamed(42, "foobar");
-
-            // Act
-            var users = _userDao.ListUsers().ToList();
-
-            // Assert
-            Assert.Single(users);
-
-            var user = users.Single();
-            Assert.NotNull(user);
-            Assert.Equal(42, user.Id);
-            Assert.Equal("foobar", user.Name);
-        }
-
-        [Fact]
-        public void TestQueryScalar()
-        {
-            // Arrange
-            _userDao.CreateTable();
-            _userDao.InsertNamed(42, "foobar");
-
-            // Act
-            var user = _userDao.GetUserById(42);
-
-            // Assert
-            Assert.NotNull(user);
-            Assert.Equal(42, user.Id);
-            Assert.Equal("foobar", user.Name);
-        }
-
-        [Fact]
-        public void TestSyntaxError()
-        {
-            // Arrange
-
-            // Act + Assert
-            Assert.ThrowsAny<DbException>(() => _userDao.SyntaxError());
-        }
+        // Act + Assert
+        Assert.ThrowsAny<DbException>(() => _userDao.SyntaxError());
     }
 }

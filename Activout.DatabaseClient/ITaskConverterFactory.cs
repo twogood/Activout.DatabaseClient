@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace Activout.DatabaseClient
+namespace Activout.DatabaseClient;
+
+public interface ITaskConverterFactory
 {
-    public interface ITaskConverterFactory
-    {
-        ITaskConverter? CreateTaskConverter(Type actualReturnType);
-    }
+    ITaskConverter? CreateTaskConverter(Type actualReturnType);
 }
