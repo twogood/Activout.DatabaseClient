@@ -16,19 +16,19 @@ namespace Activout.DatabaseClient.Test
         [SqlUpdate("CREATE TABLE user (id INTEGER PRIMARY KEY, name VARCHAR)")]
         Task CreateTable();
 
-        [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :name)")]
+        [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @name)")]
         Task InsertNamed([Bind("id")] int id, [Bind] string name);
 
-        [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :Name)")]
+        [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
         Task InsertObject([BindProperties] User user);
 
-        [SqlUpdate("INSERT INTO user(id, name) VALUES (:user_id, :user_Name)")]
+        [SqlUpdate("INSERT INTO user(id, name) VALUES (@user_id, @user_Name)")]
         Task<int> InsertObjectFull([BindProperties] User user);
 
         [SqlQuery("SELECT * FROM user ORDER BY name")]
         Task<IEnumerable<User>> ListUsers();
 
-        [SqlQuery("SELECT * FROM user WHERE id = :id")]
+        [SqlQuery("SELECT * FROM user WHERE id = @id")]
         Task<User> GetUserById(int id);
 
         [SqlQuery("syntax error")]

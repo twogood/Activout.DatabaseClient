@@ -21,19 +21,19 @@ namespace Activout.DatabaseClient.Test
         [SqlUpdate("CREATE TABLE user (id INTEGER PRIMARY KEY, name VARCHAR)")]
         void CreateTable();
 
-        [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :name)")]
+        [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @name)")]
         void InsertNamed([Bind] int id, [Bind("name")] string name);
 
-        [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :Name)")]
+        [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
         void InsertObject([BindProperties] User user);
 
-        [SqlUpdate("INSERT INTO user(id, name) VALUES (:user_id, :user_Name)")]
+        [SqlUpdate("INSERT INTO user(id, name) VALUES (@user_id, @user_Name)")]
         int InsertObjectFull([BindProperties] User user);
 
         [SqlQuery("SELECT * FROM user ORDER BY name")]
         IEnumerable<User> ListUsers();
 
-        [SqlQuery("SELECT * FROM user WHERE id = :id")]
+        [SqlQuery("SELECT * FROM user WHERE id = @id")]
         User GetUserById(int id);
 
         [SqlUpdate("syntax error")]
