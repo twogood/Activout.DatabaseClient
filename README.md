@@ -43,7 +43,36 @@ await _userDao.InsertNamed(42, null);
 var user = await _userDao.GetUserById(42);
 ```
 
-Full example code in [DatabaseClientAsyncTest.cs](https://github.com/twogood/Activout.DatabaseClient/blob/main/Activout.DatabaseClient.Test/DatabaseClientAsyncTest.cs).
+Full example code in 
+[DatabaseClientAsyncTest.cs](https://github.com/twogood/Activout.DatabaseClient/blob/main/Activout.DatabaseClient.Test/DatabaseClientAsyncTest.cs).
+
+## Example with dependency injection
+
+```C#
+
+// Connection string example for MySQL:
+// "Server=example.com;Database=example;User=example;Password=example;AutoEnlist=True;Pooling=True;ConnectionReset=True;CharSet=utf8mb4;"
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddScoped<IDbConnection>(_ => new MySqlConnection(connectionString));
+
+builder.Services.AddScoped<DatabaseClientBuilder>();
+builder.Services.AddScoped<IDatabaseClient>(sp => sp
+    .GetRequiredService<DatabaseClientBuilder>()
+    .With(new DapperGateway(sp.GetRequiredService<IDbConnection>()))
+    .Build<IDatabaseClient>());
+
+builder.Services.AddTransient<SomeService>();
+
+// ...
+
+public class SomeService(IDatabaseClient databaseClient)
+{
+    // ...
+}
+
+
+```
+
 
 ## Collaborate
 This project is still under development - participation welcome!
