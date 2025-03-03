@@ -1,48 +1,39 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using Activout.DatabaseClient.Attributes;
 
-namespace Activout.DatabaseClient.Implementation
+namespace Activout.DatabaseClient.Implementation;
+
+public class DatabaseClient<T>(DatabaseClientContext context) : DynamicObject
+    where T : class
 {
-    public class DatabaseClient<T> : DynamicObject where T : class
+    private readonly Type _type = typeof(T);
+    private readonly ConcurrentDictionary<MethodInfo, MethodHandler> _methodHandlers = new();
+
+    public override bool TryInvokeMember(InvokeMemberBinder binder, object?[]? args, out object? result)
     {
-        private readonly DatabaseClientContext _context;
-        private readonly Type _type;
+        args ??= [];
+        var method = _type.GetTypeInfo()
+            .GetDeclaredMethods(binder.Name)
+            .Single(mi => mi.GetParameters().Length == args.Length);
 
-        private readonly IDictionary<MethodInfo, MethodHandler> _methodHandlers =
-            new ConcurrentDictionary<MethodInfo, MethodHandler>();
-
-        public DatabaseClient(DatabaseClientContext context)
+        if (!_methodHandlers.TryGetValue(method, out var methodHandler))
         {
-            _type = typeof(T);
-            _context = context;
-        }
-
-        public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
-        {
-            var method = _type.GetTypeInfo()
-                .GetDeclaredMethods(binder.Name)
-                .Single(mi => mi.GetParameters().Length == args.Length);
-
-            if (!_methodHandlers.TryGetValue(method, out var methodHandler))
+            var sqlAttribute = method.GetCustomAttribute<AbstractSqlAttribute>();
+            if (sqlAttribute == null)
             {
-                var sqlAttribute = method.GetCustomAttribute<AbstractSqlAttribute>();
-                if (sqlAttribute == null)
-                {
-                    result = null;
-                    return false;
-                }
-
-                methodHandler = new MethodHandler(method, sqlAttribute, _context);
-                _methodHandlers[method] = methodHandler;
+                result = null;
+                return false;
             }
 
-            result = methodHandler.Call(args);
-            return true;
+            methodHandler = new MethodHandler(method, sqlAttribute, context);
+            _methodHandlers[method] = methodHandler;
         }
+
+        result = methodHandler.Call(args);
+        return true;
     }
 }

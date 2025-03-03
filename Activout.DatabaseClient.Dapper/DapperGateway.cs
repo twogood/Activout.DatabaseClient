@@ -35,7 +35,7 @@ public class DapperGateway : IDatabaseGateway
             .ConfigureAwait(false);
     }
 
-    public async Task<object> QueryFirstOrDefaultAsync(SqlStatement statement)
+    public async Task<object?> QueryFirstOrDefaultAsync(SqlStatement statement)
     {
         return await _dbConnection.QueryFirstOrDefaultAsync(statement.EffectiveType, statement.Sql,
                 GetDynamicParameters(statement))
