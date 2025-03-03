@@ -110,13 +110,13 @@ namespace Activout.DatabaseClient.Implementation
         private object CastEnumerable(IEnumerable<object> enumerable)
         {
             var castMethod = typeof(Enumerable).GetMethod("Cast").MakeGenericMethod(_effectiveType);
-            return castMethod.Invoke(null, new object[] {enumerable});
+            return castMethod.Invoke(null, new object[] { enumerable });
         }
 
         private object Execute(SqlStatement statement)
         {
             var task = _context.Gateway.ExecuteAsync(statement);
-            return _isAsync ? task : (object) task.Result;
+            return _isAsync ? task : (object)task.Result;
         }
 
         private void AddSqlStatementParameters(IReadOnlyList<object> args, SqlStatement statement)

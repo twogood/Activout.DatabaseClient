@@ -21,7 +21,7 @@ namespace Activout.DatabaseClient.Implementation
         {
             _type = typeof(TaskCompletionSource<>).MakeGenericType(actualReturnType);
             _setResultMethod = _type.GetMethod("SetResult");
-            _setExceptionMethod = _type.GetMethod("SetException", new[] {typeof(Exception)});
+            _setExceptionMethod = _type.GetMethod("SetException", new[] { typeof(Exception) });
             _taskProperty = _type.GetProperty("Task");
         }
 
@@ -53,12 +53,12 @@ namespace Activout.DatabaseClient.Implementation
 
         private void SetException(object taskCompletionSource, Exception e)
         {
-            _setExceptionMethod.Invoke(taskCompletionSource, new object[] {e});
+            _setExceptionMethod.Invoke(taskCompletionSource, new object[] { e });
         }
 
         private void SetResult(object taskCompletionSource, object result)
         {
-            _setResultMethod.Invoke(taskCompletionSource, new[] {result});
+            _setResultMethod.Invoke(taskCompletionSource, new[] { result });
         }
     }
 }
