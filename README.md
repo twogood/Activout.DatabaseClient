@@ -11,61 +11,25 @@ For the actual object mapping, [Dapper](https://github.com/StackExchange/Dapper)
 
 ## Example
 
-### Synchronous
-
-```C#
-public interface IUserDao
-{
-    [SqlUpdate("CREATE TABLE user (id INTEGER PRIMARY KEY, name VARCHAR)")]
-    void CreateTable();
-
-    [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :name)")]
-    void InsertNamed([Bind("id")] int id, [Bind("name")] string name);
-
-    [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :Name)")]
-    void InsertObject([BindProperties] User user);
-
-    [SqlUpdate("INSERT INTO user(id, name) VALUES (:user_id, :user_Name)")]
-    void InsertObjectFull([BindProperties] User user);
-
-    [SqlQuery("SELECT * FROM user ORDER BY name")]
-    IEnumerable<User> ListUsers();
-
-    [SqlQuery("SELECT * FROM user WHERE id = :id")]
-    User GetUserById(int id);
-}
-
-
-_userDao = new DatabaseClientBuilder()
-    .With(new DapperGateway(sqliteConnection))
-    .Build<IUserDao>();
-
-_userDao.CreateTable();
-_userDao.InsertNamed(42, "foobar");
-var user = _userDao.GetUserById(42);
-```
-
-### Asynchronous
-
 ```C#
 public interface IUserDaoAsync
 {
     [SqlUpdate("CREATE TABLE user (id INTEGER PRIMARY KEY, name VARCHAR)")]
     Task CreateTable();
 
-    [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :name)")]
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @name)")]
     Task InsertNamed([Bind("id")] int id, [Bind("name")] string name);
 
-    [SqlUpdate("INSERT INTO user(id, name) VALUES (:id, :Name)")]
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @name)")]
     Task InsertObject([BindProperties] User user);
 
-    [SqlUpdate("INSERT INTO user(id, name) VALUES (:user_id, :user_Name)")]
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@user_id, @user_name)")]
     Task InsertObjectFull([BindProperties] User user);
 
     [SqlQuery("SELECT * FROM user ORDER BY name")]
     Task<IEnumerable<User>> ListUsers();
 
-    [SqlQuery("SELECT * FROM user WHERE id = :id")]
+    [SqlQuery("SELECT * FROM user WHERE id = @id")]
     Task<User> GetUserById(int id);
 }
 
@@ -79,15 +43,7 @@ await _userDao.InsertNamed(42, null);
 var user = await _userDao.GetUserById(42);
 ```
 
-## Public projects using Activout.DatabaseClient
-
-- Your project here?
-
-## TODO
-
-- Positional parameters, if anyone cares?
-- Make it configurable whether `:` or `@` is used to mark named parameters
-- More real-life testing :)
+Full example code in [DatabaseClientAsyncTest.cs](https://github.com/twogood/Activout.DatabaseClient/blob/main/Activout.DatabaseClient.Test/DatabaseClientAsyncTest.cs).
 
 ## Collaborate
 This project is still under development - participation welcome!
