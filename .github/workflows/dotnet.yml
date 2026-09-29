@@ -28,9 +28,27 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
       - name: Build
-        run: dotnet build --no-restore
+        run: dotnet build --configuration=Release --no-restore
       - name: Test
-        run: dotnet test --no-build
+        run: dotnet test --configuration=Release --no-build
+      - name: Pack NuGet packages (PR validation)
+        if: matrix.dotnet-version == '8.0.x' && github.event_name == 'pull_request'
+        run: |
+          for PROJECT in Activout.DatabaseClient Activout.DatabaseClient.Dapper; do
+            dotnet pack "$PROJECT/$PROJECT.csproj" \
+              -p:PackageVersion=1.0.0-pr${{ github.event.pull_request.number }}.${{ github.run_number }} \
+              --configuration=Release \
+              --no-build \
+              --include-symbols \
+              --include-source
+          done
+      - name: Upload NuGet packages
+        if: matrix.dotnet-version == '8.0.x' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages-pr${{ github.event.pull_request.number }}-run${{ github.run_number }}
+          path: |
+            **/*.symbols.nupkg
 #      - name: Archive test results
 #        uses: actions/upload-artifact@v4
 #        if: always()

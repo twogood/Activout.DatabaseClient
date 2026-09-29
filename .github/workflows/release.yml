@@ -30,15 +30,41 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION"
 
-      - name: Test
-        run: dotnet test
+      - name: Restore dependencies
+        run: dotnet restore
 
-      - name: Pack
+      - name: Build
+        run: dotnet build --configuration=Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration=Release --no-build
+
+      - name: Pack Activout.DatabaseClient
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
         run: |
-          ./make-nuget.sh "${{ steps.get_version.outputs.VERSION }}"
-          mkdir -p nupkgs
-          cp */bin/Release/*."${{ steps.get_version.outputs.VERSION }}".*nupkg nupkgs/
-          ls -lh nupkgs/
+          dotnet pack Activout.DatabaseClient/Activout.DatabaseClient.csproj \
+            -p:PackageVersion="$VERSION" \
+            --configuration=Release \
+            --no-build \
+            --include-symbols \
+            --include-source \
+            --output ./nupkgs
+
+      - name: Pack Activout.DatabaseClient.Dapper
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+        run: |
+          dotnet pack Activout.DatabaseClient.Dapper/Activout.DatabaseClient.Dapper.csproj \
+            -p:PackageVersion="$VERSION" \
+            --configuration=Release \
+            --no-build \
+            --include-symbols \
+            --include-source \
+            --output ./nupkgs
+
+      - name: List generated packages
+        run: ls -lh ./nupkgs/
 
       # Keyless Sigstore provenance; verify with: gh attestation verify <file>.nupkg -R twogood/Activout.DatabaseClient
       - name: Attest build provenance
