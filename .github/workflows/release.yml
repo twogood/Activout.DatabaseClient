@@ -1,11 +1,12 @@
 name: Release
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - "v*"
 
 permissions:
-  contents: write # upload packages to the GitHub release
+  contents: write # create the GitHub release
   id-token: write # GitHub OIDC token for NuGet trusted publishing and provenance attestations
   attestations: write
 
@@ -57,13 +58,6 @@ jobs:
             artifacts/*.nupkg
             artifacts/*.snupkg
 
-      - name: Upload packages to release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            artifacts/*.nupkg
-            artifacts/*.snupkg
-
       # Exchange the OIDC token for a short-lived (1 hour) API key right before pushing.
       - name: NuGet login (trusted publishing)
         uses: NuGet/login@v1
@@ -74,3 +68,13 @@ jobs:
       # Also pushes the matching .snupkg symbol packages.
       - name: Push to NuGet.org
         run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      # Created last, so the release page only appears once the packages are on NuGet.
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
