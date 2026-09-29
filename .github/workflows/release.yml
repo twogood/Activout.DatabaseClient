@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+  id-token: write # GitHub OIDC token for NuGet trusted publishing and provenance attestations
+  attestations: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          # Remove 'v' prefix if present (e.g., v1.2.3 -> 1.2.3)
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Test
+        run: dotnet test
+
+      - name: Pack
+        run: |
+          ./make-nuget.sh "${{ steps.get_version.outputs.VERSION }}"
+          mkdir -p nupkgs
+          cp */bin/Release/*."${{ steps.get_version.outputs.VERSION }}".*nupkg nupkgs/
+          ls -lh nupkgs/
+
+      # Keyless Sigstore provenance; verify with: gh attestation verify <file>.nupkg -R twogood/Activout.DatabaseClient
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: ./nupkgs/*.nupkg
+
+      - name: Upload packages to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./nupkgs/*.symbols.nupkg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Exchange the OIDC token for a short-lived (1 hour) API key right before pushing.
+      - name: NuGet login (trusted publishing)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push to NuGet.org
+        run: |
+          dotnet nuget push ./nupkgs/*.symbols.nupkg \
+            --api-key ${{ steps.login.outputs.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
