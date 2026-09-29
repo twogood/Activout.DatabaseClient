@@ -15,9 +15,9 @@ jobs:
         dotnet-version: [ '8.0.x', '9.0.x', '10.0.x' ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Setup dotnet ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         id: stepid
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
@@ -28,11 +28,22 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
       - name: Build
-        run: dotnet build --no-restore
+        run: dotnet build --configuration=Release --no-restore
       - name: Test
-        run: dotnet test --no-build
+        run: dotnet test --configuration=Release --no-build
+      - name: Pack NuGet packages (PR validation)
+        if: matrix.dotnet-version == '8.0.x' && github.event_name == 'pull_request'
+        run: dotnet pack --configuration=Release --no-build -p:PackageVersion=1.0.0-pr${{ github.event.pull_request.number }}.${{ github.run_number }} -o artifacts
+      - name: Upload NuGet packages
+        if: matrix.dotnet-version == '8.0.x' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: nuget-packages-pr${{ github.event.pull_request.number }}-run${{ github.run_number }}
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
 #      - name: Archive test results
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v7
 #        if: always()
 #        with:
 #          name: TestResults

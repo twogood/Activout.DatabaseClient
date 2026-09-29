@@ -4,6 +4,8 @@
         <LangVersion>default</LangVersion>
         <TargetFramework>net8.0</TargetFramework>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <Title>Activout Database Client</Title>
+        <Description>Create a Database Access Object (DAO) defining the C# interface you want and writing the SQL query.</Description>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 

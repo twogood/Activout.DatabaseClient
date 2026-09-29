@@ -4,6 +4,8 @@
         <LangVersion>default</LangVersion>
         <TargetFramework>net8.0</TargetFramework>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <Title>Activout Database Client - Dapper backend</Title>
+        <Description>Dapper Backend for Activout.DatabaseClient.</Description>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
