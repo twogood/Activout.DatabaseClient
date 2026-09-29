@@ -6,10 +6,6 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Title>Activout Database Client - Dapper backend</Title>
         <Description>Dapper Backend for Activout.DatabaseClient.</Description>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageProjectUrl>https://github.com/twogood/Activout.DatabaseClient</PackageProjectUrl>
-        <RepositoryType>git</RepositoryType>
-        <RepositoryUrl>https://github.com/twogood/Activout.DatabaseClient.git</RepositoryUrl>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 

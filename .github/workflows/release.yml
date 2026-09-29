@@ -5,7 +5,7 @@ on:
     types: [created]
 
 permissions:
-  contents: write
+  contents: write # upload packages to the GitHub release
   id-token: write # GitHub OIDC token for NuGet trusted publishing and provenance attestations
   attestations: write
 
@@ -14,70 +14,55 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '8.0.x'
 
-      - name: Extract version from tag
-        id: get_version
-        run: |
-          # Remove 'v' prefix if present (e.g., v1.2.3 -> 1.2.3)
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION=${VERSION#v}
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building version: $VERSION"
-
-      - name: Restore dependencies
+      - name: Restore
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --configuration=Release --no-restore
+        run: dotnet build --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test --configuration=Release --no-build
+        run: dotnet test --configuration Release --no-build
 
-      - name: Pack Activout.DatabaseClient
-        env:
-          VERSION: ${{ steps.get_version.outputs.VERSION }}
+      # Packs every packable project; test projects set IsPackable=false.
+      - name: Pack
         run: |
-          dotnet pack Activout.DatabaseClient/Activout.DatabaseClient.csproj \
+          VERSION="${GITHUB_REF_NAME#v}"
+          dotnet pack \
+            --configuration Release --no-build \
             -p:PackageVersion="$VERSION" \
-            --configuration=Release \
-            --no-build \
-            --include-symbols \
-            --include-source \
-            --output ./nupkgs
+            -o artifacts
 
-      - name: Pack Activout.DatabaseClient.Dapper
-        env:
-          VERSION: ${{ steps.get_version.outputs.VERSION }}
-        run: |
-          dotnet pack Activout.DatabaseClient.Dapper/Activout.DatabaseClient.Dapper.csproj \
-            -p:PackageVersion="$VERSION" \
-            --configuration=Release \
-            --no-build \
-            --include-symbols \
-            --include-source \
-            --output ./nupkgs
-
-      - name: List generated packages
-        run: ls -lh ./nupkgs/
+      - name: Upload NuGet package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: nuget-packages
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+          if-no-files-found: error
 
       # Keyless Sigstore provenance; verify with: gh attestation verify <file>.nupkg -R twogood/Activout.DatabaseClient
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v4
         with:
-          subject-path: ./nupkgs/*.nupkg
+          subject-path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
 
       - name: Upload packages to release
         uses: softprops/action-gh-release@v2
         with:
-          files: ./nupkgs/*.symbols.nupkg
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
 
       # Exchange the OIDC token for a short-lived (1 hour) API key right before pushing.
       - name: NuGet login (trusted publishing)
@@ -86,9 +71,6 @@ jobs:
         with:
           user: ${{ secrets.NUGET_USER }}
 
+      # Also pushes the matching .snupkg symbol packages.
       - name: Push to NuGet.org
-        run: |
-          dotnet nuget push ./nupkgs/*.symbols.nupkg \
-            --api-key ${{ steps.login.outputs.NUGET_API_KEY }} \
-            --source https://api.nuget.org/v3/index.json \
-            --skip-duplicate
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate

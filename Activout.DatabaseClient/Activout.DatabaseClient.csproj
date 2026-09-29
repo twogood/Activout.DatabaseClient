@@ -6,10 +6,6 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Title>Activout Database Client</Title>
         <Description>Create a Database Access Object (DAO) defining the C# interface you want and writing the SQL query.</Description>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageProjectUrl>https://github.com/twogood/Activout.DatabaseClient</PackageProjectUrl>
-        <RepositoryType>git</RepositoryType>
-        <RepositoryUrl>https://github.com/twogood/Activout.DatabaseClient.git</RepositoryUrl>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
