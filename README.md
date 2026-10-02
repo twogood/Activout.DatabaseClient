@@ -57,9 +57,15 @@ var userDao = new DatabaseClientBuilder().With(gateway).Build<IUserDaoAsync>();
 
 using var transaction = sqliteConnection.BeginTransaction();
 gateway.Transaction = transaction;
-await userDao.InsertNamed(42, "foobar");
-transaction.Commit();
-gateway.Transaction = null;
+try
+{
+    await userDao.InsertNamed(42, "foobar");
+    transaction.Commit();
+}
+finally
+{
+    gateway.Transaction = null;
+}
 ```
 
 ## Example with dependency injection
