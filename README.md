@@ -46,6 +46,22 @@ var user = await _userDao.GetUserById(42);
 Full example code in 
 [DatabaseClientAsyncTest.cs](https://github.com/twogood/Activout.DatabaseClient/blob/main/Activout.DatabaseClient.Test/DatabaseClientAsyncTest.cs).
 
+## Transactions
+
+`DapperGateway.Transaction` is passed to every statement. Set it after beginning a transaction on the connection
+and clear it afterwards:
+
+```C#
+var gateway = new DapperGateway(sqliteConnection);
+var userDao = new DatabaseClientBuilder().With(gateway).Build<IUserDaoAsync>();
+
+using var transaction = sqliteConnection.BeginTransaction();
+gateway.Transaction = transaction;
+await userDao.InsertNamed(42, "foobar");
+transaction.Commit();
+gateway.Transaction = null;
+```
+
 ## Example with dependency injection
 
 ```C#

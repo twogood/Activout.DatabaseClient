@@ -10,6 +10,12 @@ public class DapperGateway : IDatabaseGateway
     private readonly IDbConnection _dbConnection;
     private readonly string _parameterPrefix;
 
+    /// <summary>
+    /// Transaction passed to every statement. Set it after calling BeginTransaction on the connection
+    /// and clear it after commit or rollback. Required by providers such as Microsoft.Data.Sqlite.
+    /// </summary>
+    public IDbTransaction? Transaction { get; set; }
+
     public DapperGateway(IDbConnection dbConnection, string parameterPrefix = "@")
     {
         _dbConnection = dbConnection;
@@ -23,7 +29,7 @@ public class DapperGateway : IDatabaseGateway
     public async Task<int> ExecuteAsync(SqlStatement statement)
     {
         return await _dbConnection.ExecuteAsync(statement.Sql,
-                GetDynamicParameters(statement))
+                GetDynamicParameters(statement), Transaction)
             .ConfigureAwait(false);
     }
 
@@ -31,14 +37,14 @@ public class DapperGateway : IDatabaseGateway
     {
         return await _dbConnection
             .QueryAsync(statement.EffectiveType, statement.Sql,
-                GetDynamicParameters(statement))
+                GetDynamicParameters(statement), Transaction)
             .ConfigureAwait(false);
     }
 
     public async Task<object?> QueryFirstOrDefaultAsync(SqlStatement statement)
     {
         return await _dbConnection.QueryFirstOrDefaultAsync(statement.EffectiveType, statement.Sql,
-                GetDynamicParameters(statement))
+                GetDynamicParameters(statement), Transaction)
             .ConfigureAwait(false);
     }
 
