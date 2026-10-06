@@ -52,7 +52,6 @@ public class DatabaseClientAsyncTest
         var sqliteConnection = new SqliteConnection(connectionString);
 
         _userDao = new DatabaseClientBuilder()
-            .With(new TaskConverter3Factory())
             .With(new DapperGateway(sqliteConnection))
             .Build<IUserDaoAsync>();
     }

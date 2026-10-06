@@ -2,7 +2,7 @@
 
 namespace Activout.DatabaseClient;
 
-public interface ITaskConverter
+internal interface ITaskConverter
 {
     object? ConvertReturnType(Task<object?> task);
 }

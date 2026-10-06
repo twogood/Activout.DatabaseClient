@@ -53,7 +53,6 @@ public class DatabaseClientTest
         var sqliteConnection = new SqliteConnection(connectionString);
 
         _userDao = new DatabaseClientBuilder()
-            .With(new DuckTyping())
             .With(new DapperGateway(sqliteConnection))
             .Build<IUserDao>();
     }

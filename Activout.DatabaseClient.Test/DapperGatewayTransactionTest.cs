@@ -17,7 +17,6 @@ public class DapperGatewayTransactionTest
     {
         _gateway = new DapperGateway(_connection);
         _userDao = new DatabaseClientBuilder()
-            .With(new TaskConverter3Factory())
             .With(_gateway)
             .Build<IUserDaoAsync>();
     }

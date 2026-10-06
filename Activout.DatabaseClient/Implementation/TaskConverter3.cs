@@ -6,7 +6,7 @@ namespace Activout.DatabaseClient.Implementation;
 /*
  * Convert from Task<object> to Task<T> where T is the Type
  */
-public class TaskConverter3<T> : ITaskConverter
+internal class TaskConverter3<T> : ITaskConverter
 {
     [StackTraceHidden]
     public object? ConvertReturnType(Task<object?> task)

@@ -7,7 +7,7 @@ using Activout.DatabaseClient.Attributes;
 
 namespace Activout.DatabaseClient.Implementation;
 
-public class DatabaseClient<T>(DatabaseClientContext context) : DynamicObject
+public class DatabaseClient<T>(IDatabaseGateway gateway) : DynamicObject
     where T : class
 {
     private readonly Type _type = typeof(T);
@@ -29,7 +29,7 @@ public class DatabaseClient<T>(DatabaseClientContext context) : DynamicObject
                 return false;
             }
 
-            methodHandler = new MethodHandler(method, sqlAttribute, context);
+            methodHandler = new MethodHandler(method, sqlAttribute, gateway);
             _methodHandlers[method] = methodHandler;
         }
 
