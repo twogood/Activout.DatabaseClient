@@ -12,20 +12,20 @@ public class MethodHandler
 {
     private readonly MethodInfo _method;
     private readonly AbstractSqlAttribute _sqlAttribute;
-    private readonly DatabaseClientContext _context;
+    private readonly IDatabaseGateway _gateway;
     private readonly bool _isResultEnumerable;
     private readonly bool _isUpdate;
     private readonly Type _effectiveType;
     private readonly bool _isAsync;
     private readonly ITaskConverter? _taskConverter;
 
-    public MethodHandler(MethodInfo method, AbstractSqlAttribute sqlAttribute, DatabaseClientContext context)
+    public MethodHandler(MethodInfo method, AbstractSqlAttribute sqlAttribute, IDatabaseGateway gateway)
     {
         Type resultType;
         _method = method;
         _sqlAttribute = sqlAttribute;
         _isUpdate = _sqlAttribute is SqlUpdateAttribute;
-        _context = context;
+        _gateway = gateway;
 
         var returnType = _method.ReturnType;
         if (returnType == typeof(Task))
@@ -46,7 +46,9 @@ public class MethodHandler
 
         if (_isAsync)
         {
-            _taskConverter = _context.TaskConverterFactory.CreateTaskConverter(resultType);
+            _taskConverter = resultType == typeof(void)
+                ? null
+                : (ITaskConverter)Activator.CreateInstance(typeof(TaskConverter3<>).MakeGenericType(resultType))!;
         }
 
         _isResultEnumerable = resultType is
@@ -94,7 +96,7 @@ public class MethodHandler
 
     private object? QueryFirstOrDefault(SqlStatement statement)
     {
-        var task = _context.Gateway.QueryFirstOrDefaultAsync(statement);
+        var task = _gateway.QueryFirstOrDefaultAsync(statement);
         return _isAsync ? _taskConverter!.ConvertReturnType(task) : task.Result;
     }
 
@@ -106,7 +108,7 @@ public class MethodHandler
 
     private async Task<object?> QueryAsync(SqlStatement statement)
     {
-        return CastEnumerable(await _context.Gateway.QueryAsync(statement).ConfigureAwait(false));
+        return CastEnumerable(await _gateway.QueryAsync(statement).ConfigureAwait(false));
     }
 
     private object? CastEnumerable(IEnumerable<object> enumerable)
@@ -117,7 +119,7 @@ public class MethodHandler
 
     private object Execute(SqlStatement statement)
     {
-        var task = _context.Gateway.ExecuteAsync(statement);
+        var task = _gateway.ExecuteAsync(statement);
         return _isAsync ? task : task.Result;
     }
 
