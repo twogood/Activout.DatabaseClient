@@ -1,5 +1,3 @@
-using ImpromptuInterface;
-
 namespace Activout.DatabaseClient.Implementation;
 
 public class DatabaseClientBuilder : IDatabaseClientBuilder
@@ -14,6 +12,6 @@ public class DatabaseClientBuilder : IDatabaseClientBuilder
 
     public T Build<T>() where T : class
     {
-        return new DatabaseClient<T>(_gateway).ActLike<T>();
+        return DatabaseClient.Create<T>(_gateway);
     }
 }
