@@ -10,7 +10,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="ImpromptuInterface" Version="8.1.0"/>
         <None Include="README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
 

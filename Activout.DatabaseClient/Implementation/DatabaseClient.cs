@@ -1,39 +1,29 @@
 using System;
 using System.Collections.Concurrent;
-using System.Dynamic;
-using System.Linq;
 using System.Reflection;
 using Activout.DatabaseClient.Attributes;
 
 namespace Activout.DatabaseClient.Implementation;
 
-public class DatabaseClient<T>(IDatabaseGateway gateway) : DynamicObject
-    where T : class
+public class DatabaseClient : DispatchProxy
 {
-    private readonly Type _type = typeof(T);
     private readonly ConcurrentDictionary<MethodInfo, MethodHandler> _methodHandlers = new();
+    private IDatabaseGateway _gateway = null!;
 
-    public override bool TryInvokeMember(InvokeMemberBinder binder, object?[]? args, out object? result)
+    internal static T Create<T>(IDatabaseGateway gateway) where T : class
     {
-        args ??= [];
-        var method = _type.GetTypeInfo()
-            .GetDeclaredMethods(binder.Name)
-            .Single(mi => mi.GetParameters().Length == args.Length);
+        var proxy = Create<T, DatabaseClient>();
+        ((DatabaseClient)(object)proxy)._gateway = gateway;
+        return proxy;
+    }
 
-        if (!_methodHandlers.TryGetValue(method, out var methodHandler))
-        {
-            var sqlAttribute = method.GetCustomAttribute<AbstractSqlAttribute>();
-            if (sqlAttribute == null)
-            {
-                result = null;
-                return false;
-            }
-
-            methodHandler = new MethodHandler(method, sqlAttribute, gateway);
-            _methodHandlers[method] = methodHandler;
-        }
-
-        result = methodHandler.Call(args);
-        return true;
+    protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+    {
+        var handler = _methodHandlers.GetOrAdd(targetMethod!, method =>
+            new MethodHandler(method,
+                method.GetCustomAttribute<AbstractSqlAttribute>() ??
+                throw new NotSupportedException($"{method.Name} has no SQL attribute"),
+                _gateway));
+        return handler.Call(args ?? []);
     }
 }
