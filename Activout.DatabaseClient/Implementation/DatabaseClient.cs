@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Data;
 using System.Reflection;
 using Activout.DatabaseClient.Attributes;
 
@@ -19,7 +20,12 @@ public class DatabaseClient : DispatchProxy
 
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
     {
-        var handler = _methodHandlers.GetOrAdd(targetMethod!, method =>
+        if (targetMethod!.DeclaringType == typeof(IWithTransactions))
+        {
+            return _gateway.BeginTransaction((IsolationLevel)args![0]!);
+        }
+
+        var handler =_methodHandlers.GetOrAdd(targetMethod!, method =>
             new MethodHandler(method,
                 method.GetCustomAttribute<AbstractSqlAttribute>() ??
                 throw new NotSupportedException($"{method.Name} has no SQL attribute"),
