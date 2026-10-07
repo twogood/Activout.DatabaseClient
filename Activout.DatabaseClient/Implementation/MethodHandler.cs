@@ -9,6 +9,7 @@ using Activout.DatabaseClient.Attributes;
 
 namespace Activout.DatabaseClient.Implementation;
 
+/// <summary>Executes the SQL for one DAO interface method.</summary>
 public class MethodHandler
 {
     private readonly MethodInfo _method;
@@ -21,6 +22,10 @@ public class MethodHandler
     private readonly Func<Task<object?>, object>? _taskConverter;
     private readonly int _transactionIndex;
 
+    /// <summary>Creates a handler for <paramref name="method"/>.</summary>
+    /// <param name="method">The DAO interface method.</param>
+    /// <param name="sqlAttribute">The SQL attribute on the method.</param>
+    /// <param name="gateway">The gateway that executes the SQL.</param>
     public MethodHandler(MethodInfo method, AbstractSqlAttribute sqlAttribute, IDatabaseGateway gateway)
     {
         Type resultType;
@@ -68,6 +73,9 @@ public class MethodHandler
         }
     }
 
+    /// <summary>Executes the SQL with the given method arguments.</summary>
+    /// <param name="args">The method arguments.</param>
+    /// <returns>The method return value.</returns>
     public object? Call(object?[] args)
     {
         var statement = new SqlStatement

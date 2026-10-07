@@ -6,6 +6,9 @@ using Activout.DatabaseClient.Attributes;
 
 namespace Activout.DatabaseClient.Implementation;
 
+/// <summary>
+/// The proxy that implements DAO interfaces. Use <see cref="DatabaseClientBuilder"/> to create one.
+/// </summary>
 public class DatabaseClient : DispatchProxy
 {
     private readonly ConcurrentDictionary<MethodInfo, MethodHandler> _methodHandlers = new();
@@ -18,6 +21,7 @@ public class DatabaseClient : DispatchProxy
         return proxy;
     }
 
+    /// <inheritdoc />
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
     {
         if (targetMethod!.DeclaringType == typeof(IWithTransactions))

@@ -4,6 +4,8 @@ Create a database client only by defining the C# interface you want. Uses Dapper
 Create a Database Access Object (DAO) defining the C# interface you want and writing the SQL query.
 *Shamelessly inspired by [Jdbi Declarative API](http://jdbi.org/#_declarative_api).* 
 
+[API documentation](https://twogood.github.io/Activout.DatabaseClient/api/Activout.DatabaseClient.html)
+
 ## Rationale
 The Activout Database Client provides a type-safe approach to make SQL requests to the database.
 

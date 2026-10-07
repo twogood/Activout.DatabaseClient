@@ -8,5 +8,8 @@ namespace Activout.DatabaseClient;
 /// </summary>
 public interface IWithTransactions
 {
+    /// <summary>Begins a transaction.</summary>
+    /// <param name="isolationLevel">The isolation level.</param>
+    /// <returns>The transaction. Commit or roll back and dispose it when done.</returns>
     IDbTransaction BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.Unspecified);
 }
