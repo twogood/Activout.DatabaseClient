@@ -10,7 +10,7 @@ using Activout.DatabaseClient.Attributes;
 namespace Activout.DatabaseClient.Implementation;
 
 /// <summary>Executes the SQL for one DAO interface method.</summary>
-public class MethodHandler
+internal class MethodHandler
 {
     private readonly MethodInfo _method;
     private readonly AbstractSqlAttribute _sqlAttribute;
