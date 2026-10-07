@@ -7,6 +7,7 @@
         <Title>Activout Database Client</Title>
         <Description>Create a Database Access Object (DAO) defining the C# interface you want and writing the SQL query.</Description>
         <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>

@@ -7,6 +7,7 @@
         <Title>Activout Database Client - Dapper backend</Title>
         <Description>Dapper Backend for Activout.DatabaseClient.</Description>
         <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>

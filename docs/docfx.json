@@ -1,0 +1,13 @@
+{
+  "metadata": [{
+    "src": [{ "src": "..", "files": ["Activout.DatabaseClient/*.csproj", "Activout.DatabaseClient.Dapper/*.csproj"] }],
+    "dest": "api"
+  }],
+  "build": {
+    "content": [
+      { "files": ["api/**.yml", "api/toc.yml", "index.md", "toc.yml"] }
+    ],
+    "output": "_site",
+    "globalMetadata": { "_appTitle": "Activout.DatabaseClient", "_enableSearch": true }
+  }
+}

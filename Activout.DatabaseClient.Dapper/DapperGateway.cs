@@ -5,11 +5,15 @@ using Dapper;
 
 namespace Activout.DatabaseClient.Dapper;
 
+/// <summary>An <see cref="IDatabaseGateway"/> that uses Dapper.</summary>
 public class DapperGateway : IDatabaseGateway
 {
     private readonly IDbConnection _dbConnection;
     private readonly string _parameterPrefix;
 
+    /// <summary>Creates the gateway, opening the connection if it is closed.</summary>
+    /// <param name="dbConnection">The database connection.</param>
+    /// <param name="parameterPrefix">The prefix for SQL parameter names, such as <c>@</c> or <c>:</c>.</param>
     public DapperGateway(IDbConnection dbConnection, string parameterPrefix = "@")
     {
         _dbConnection = dbConnection;
@@ -20,11 +24,13 @@ public class DapperGateway : IDatabaseGateway
         }
     }
 
+    /// <inheritdoc />
     public IDbTransaction BeginTransaction(IsolationLevel isolationLevel)
     {
         return _dbConnection.BeginTransaction(isolationLevel);
     }
 
+    /// <inheritdoc />
     public async Task<int> ExecuteAsync(SqlStatement statement)
     {
         return await _dbConnection.ExecuteAsync(statement.Sql,
@@ -32,6 +38,7 @@ public class DapperGateway : IDatabaseGateway
             .ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<object>> QueryAsync(SqlStatement statement)
     {
         return await _dbConnection
@@ -40,6 +47,7 @@ public class DapperGateway : IDatabaseGateway
             .ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
     public async Task<object?> QueryFirstOrDefaultAsync(SqlStatement statement)
     {
         return await _dbConnection.QueryFirstOrDefaultAsync(statement.EffectiveType, statement.Sql,
