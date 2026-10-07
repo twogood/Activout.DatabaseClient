@@ -9,7 +9,7 @@ namespace Activout.DatabaseClient.Implementation;
 /// <summary>
 /// The proxy that implements DAO interfaces. Use <see cref="DatabaseClientBuilder"/> to create one.
 /// </summary>
-public class DatabaseClient : DispatchProxy
+internal class DatabaseClient : DispatchProxy
 {
     private readonly ConcurrentDictionary<MethodInfo, MethodHandler> _methodHandlers = new();
     private IDatabaseGateway _gateway = null!;
