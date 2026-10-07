@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -17,7 +17,7 @@ public class MethodHandler
     private readonly bool _isUpdate;
     private readonly Type _effectiveType;
     private readonly bool _isAsync;
-    private readonly ITaskConverter? _taskConverter;
+    private readonly Func<Task<object?>, object>? _taskConverter;
 
     public MethodHandler(MethodInfo method, AbstractSqlAttribute sqlAttribute, IDatabaseGateway gateway)
     {
@@ -48,7 +48,7 @@ public class MethodHandler
         {
             _taskConverter = resultType == typeof(void)
                 ? null
-                : (ITaskConverter)Activator.CreateInstance(typeof(TaskConverter3<>).MakeGenericType(resultType))!;
+                : TaskConverter.Create(resultType);
         }
 
         _isResultEnumerable = resultType is
@@ -97,13 +97,13 @@ public class MethodHandler
     private object? QueryFirstOrDefault(SqlStatement statement)
     {
         var task = _gateway.QueryFirstOrDefaultAsync(statement);
-        return _isAsync ? _taskConverter!.ConvertReturnType(task) : task.Result;
+        return _isAsync ? _taskConverter!(task) : task.Result;
     }
 
     private object? Query(SqlStatement statement)
     {
         var task = QueryAsync(statement);
-        return _isAsync ? _taskConverter!.ConvertReturnType(task) : task.Result;
+        return _isAsync ? _taskConverter!(task) : task.Result;
     }
 
     private async Task<object?> QueryAsync(SqlStatement statement)
