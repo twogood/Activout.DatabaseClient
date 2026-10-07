@@ -1,5 +1,8 @@
+using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using Activout.DatabaseClient.Attributes;
 using Activout.DatabaseClient.Dapper;
 using Activout.DatabaseClient.Implementation;
 using Microsoft.Data.Sqlite;
@@ -7,34 +10,36 @@ using Xunit;
 
 namespace Activout.DatabaseClient.Test;
 
+public interface IUserDaoWithTransactions : IWithTransactions
+{
+    [SqlUpdate("CREATE TABLE user (id INTEGER PRIMARY KEY, name VARCHAR(255))")]
+    Task CreateTable();
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @name)")]
+    Task InsertNamed(int id, string name, IDbTransaction? transaction);
+
+    [SqlQuery("SELECT * FROM user ORDER BY name")]
+    Task<IEnumerable<User>> ListUsers(IDbTransaction? transaction);
+}
+
 public class DapperGatewayTransactionTest
 {
-    private readonly SqliteConnection _connection = new("Data Source=:memory:");
-    private readonly DapperGateway _gateway;
-    private readonly IUserDaoAsync _userDao;
-
-    public DapperGatewayTransactionTest()
-    {
-        _gateway = new DapperGateway(_connection);
-        _userDao = new DatabaseClientBuilder()
-            .With(_gateway)
-            .Build<IUserDaoAsync>();
-    }
+    private readonly IUserDaoWithTransactions _userDao = new DatabaseClientBuilder()
+        .With(new DapperGateway(new SqliteConnection("Data Source=:memory:")))
+        .Build<IUserDaoWithTransactions>();
 
     [Fact]
     public async Task TestCommit()
     {
         await _userDao.CreateTable();
 
-        using (var transaction = _connection.BeginTransaction())
+        using (var transaction = _userDao.BeginTransaction())
         {
-            _gateway.Transaction = transaction;
-            await _userDao.InsertNamed(1, "one");
+            await _userDao.InsertNamed(1, "one", transaction);
             transaction.Commit();
-            _gateway.Transaction = null;
         }
 
-        Assert.Single(await _userDao.ListUsers());
+        Assert.Single(await _userDao.ListUsers(null));
     }
 
     [Fact]
@@ -42,15 +47,13 @@ public class DapperGatewayTransactionTest
     {
         await _userDao.CreateTable();
 
-        using (var transaction = _connection.BeginTransaction())
+        using (var transaction = _userDao.BeginTransaction(IsolationLevel.Serializable))
         {
-            _gateway.Transaction = transaction;
-            await _userDao.InsertNamed(1, "one");
-            Assert.Single(await _userDao.ListUsers());
+            await _userDao.InsertNamed(1, "one", transaction);
+            Assert.Single(await _userDao.ListUsers(transaction));
             transaction.Rollback();
-            _gateway.Transaction = null;
         }
 
-        Assert.Empty((await _userDao.ListUsers()).ToList());
+        Assert.Empty((await _userDao.ListUsers(null)).ToList());
     }
 }

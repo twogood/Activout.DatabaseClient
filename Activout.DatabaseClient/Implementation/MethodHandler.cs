@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -18,6 +19,7 @@ public class MethodHandler
     private readonly Type _effectiveType;
     private readonly bool _isAsync;
     private readonly Func<Task<object?>, object>? _taskConverter;
+    private readonly int _transactionIndex;
 
     public MethodHandler(MethodInfo method, AbstractSqlAttribute sqlAttribute, IDatabaseGateway gateway)
     {
@@ -26,6 +28,8 @@ public class MethodHandler
         _sqlAttribute = sqlAttribute;
         _isUpdate = _sqlAttribute is SqlUpdateAttribute;
         _gateway = gateway;
+        _transactionIndex = Array.FindIndex(method.GetParameters(),
+            p => typeof(IDbTransaction).IsAssignableFrom(p.ParameterType));
 
         var returnType = _method.ReturnType;
         if (returnType == typeof(Task))
@@ -69,7 +73,8 @@ public class MethodHandler
         var statement = new SqlStatement
         {
             Sql = _sqlAttribute.Sql,
-            EffectiveType = _effectiveType
+            EffectiveType = _effectiveType,
+            Transaction = _transactionIndex >= 0 ? (IDbTransaction?)args[_transactionIndex] : null
         };
 
         AddSqlStatementParameters(args, statement);
@@ -128,6 +133,8 @@ public class MethodHandler
         var parameters = _method.GetParameters();
         for (var index = 0; index < parameters.Length; index++)
         {
+            if (index == _transactionIndex) continue;
+
             var parameter = parameters[index];
             var value = args[index];
 

@@ -48,25 +48,22 @@ Full example code in
 
 ## Transactions
 
-`DapperGateway.Transaction` is passed to every statement. Set it after beginning a transaction on the connection
-and clear it afterwards:
+Extend your DAO interface with `IWithTransactions` to begin transactions, and add an `IDbTransaction` parameter to
+the methods that should run in one. Passing `null` runs the statement without a transaction.
 
 ```C#
-var gateway = new DapperGateway(sqliteConnection);
-var userDao = new DatabaseClientBuilder().With(gateway).Build<IUserDaoAsync>();
+public interface IUserDao : IWithTransactions
+{
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @name)")]
+    Task InsertNamed(int id, string name, IDbTransaction? transaction);
+}
 
-using var transaction = sqliteConnection.BeginTransaction();
-gateway.Transaction = transaction;
-try
-{
-    await userDao.InsertNamed(42, "foobar");
-    transaction.Commit();
-}
-finally
-{
-    gateway.Transaction = null;
-}
+using var transaction = userDao.BeginTransaction();
+await userDao.InsertNamed(42, "foobar", transaction);
+transaction.Commit();
 ```
+
+Some providers, such as Microsoft.Data.Sqlite, require every statement to pass the pending transaction.
 
 ## Example with dependency injection
 
