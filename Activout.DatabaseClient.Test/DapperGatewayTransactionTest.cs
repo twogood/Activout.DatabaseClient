@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Activout.DatabaseClient.Attributes;
 using Activout.DatabaseClient.Dapper;
 using Activout.DatabaseClient.Implementation;
+using Dapper;
 using Microsoft.Data.Sqlite;
 using Xunit;
 
@@ -21,8 +22,16 @@ public interface IUserDaoWithTransactions : IWithTransactions
     [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
     Task<int> InsertMany([BindMany] IEnumerable<User> users, IDbTransaction? transaction);
 
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    Task<int> InsertManyWithShared(int id, [BindMany] IEnumerable<UserNameOnly> users, IDbTransaction? transaction);
+
     [SqlQuery("SELECT * FROM user ORDER BY name")]
     Task<IEnumerable<User>> ListUsers(IDbTransaction? transaction);
+}
+
+public class UserNameOnly
+{
+    public string Name { get; set; } = "";
 }
 
 public class DapperGatewayTransactionTest
@@ -81,7 +90,25 @@ public class DapperGatewayTransactionTest
     {
         await _userDao.CreateTable();
         var users = new[] { new User { Id = 1, Name = "one" }, new User { Id = 2, Name = "two" } };
-        await _userDao.InsertMany(users, null);
+        var count = await _userDao.InsertMany(users, null);
+        Assert.Equal(2, count);
         Assert.Equal(2, (await _userDao.ListUsers(null)).Count());
+    }
+
+    [Fact]
+    public async Task TestBindManyWithShared()
+    {
+        await _userDao.CreateTable();
+        var users = new[] { new UserNameOnly { Name = "one" } };
+        await _userDao.InsertManyWithShared(1, users, null);
+        Assert.Single(await _userDao.ListUsers(null));
+    }
+
+    [Fact]
+    public async Task TestBindManyEmpty()
+    {
+        await _userDao.CreateTable();
+        Assert.Equal(0, await _userDao.InsertMany(Enumerable.Empty<User>(), null));
+        Assert.Empty(await _userDao.ListUsers(null));
     }
 }

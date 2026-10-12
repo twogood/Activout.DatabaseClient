@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 
@@ -42,15 +43,9 @@ public class DapperGateway : IDatabaseGateway
     public async Task<int> ExecuteManyAsync(SqlStatement statement,
         IEnumerable<IReadOnlyList<QueryParameter>> parameterSets)
     {
-        var affected = 0;
-        foreach (var parameters in parameterSets)
-        {
-            affected += await _dbConnection.ExecuteAsync(statement.Sql,
-                    GetDynamicParameters(parameters), statement.Transaction)
-                .ConfigureAwait(false);
-        }
-
-        return affected;
+        return await _dbConnection.ExecuteAsync(statement.Sql,
+                parameterSets.Select(GetDynamicParameters), statement.Transaction)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
