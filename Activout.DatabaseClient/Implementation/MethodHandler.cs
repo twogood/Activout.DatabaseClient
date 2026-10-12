@@ -21,6 +21,14 @@ internal class MethodHandler
     private readonly bool _isAsync;
     private readonly Func<Task<object?>, object>? _taskConverter;
     private readonly int _transactionIndex;
+    private readonly bool _isArray;
+    private readonly Type _resultType;
+
+    private static readonly HashSet<Type> SupportedCollectionDefinitions =
+    [
+        typeof(IEnumerable<>), typeof(IReadOnlyCollection<>), typeof(IReadOnlyList<>),
+        typeof(ICollection<>), typeof(IList<>), typeof(List<>)
+    ];
 
     /// <summary>Creates a handler for <paramref name="method"/>.</summary>
     /// <param name="method">The DAO interface method.</param>
@@ -60,17 +68,39 @@ internal class MethodHandler
                 : TaskConverter.Create(resultType);
         }
 
-        _isResultEnumerable = resultType is
-        { IsGenericType: true, Namespace: "System.Collections.Generic", Name: "IEnumerable`1" };
+        var elementType = GetElementType(resultType, out _isArray);
+        _isResultEnumerable = elementType != null;
+        _resultType = resultType;
+        _effectiveType = elementType ?? resultType;
+    }
 
-        if (_isResultEnumerable)
+    private static Type? GetElementType(Type resultType, out bool isArray)
+    {
+        isArray = false;
+        if (resultType.IsArray)
         {
-            _effectiveType = resultType.GenericTypeArguments[0];
+            if (resultType.GetArrayRank() != 1 || resultType == typeof(byte[])) return null;
+            isArray = true;
+            return resultType.GetElementType();
         }
-        else
+
+        if (!resultType.IsGenericType) return null;
+
+        var definition = resultType.GetGenericTypeDefinition();
+        if (SupportedCollectionDefinitions.Contains(definition))
         {
-            _effectiveType = resultType;
+            return resultType.GenericTypeArguments[0];
         }
+
+        if (resultType.Namespace is { } ns && ns.StartsWith("System.Collections", StringComparison.Ordinal) &&
+            resultType.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+        {
+            throw new NotSupportedException(
+                $"Unsupported collection return type {resultType}. Supported types are IEnumerable<T>, " +
+                "IReadOnlyCollection<T>, IReadOnlyList<T>, ICollection<T>, IList<T>, List<T> and T[].");
+        }
+
+        return null;
     }
 
     /// <summary>Executes the SQL with the given method arguments.</summary>
@@ -127,7 +157,15 @@ internal class MethodHandler
     private object? CastEnumerable(IEnumerable<object> enumerable)
     {
         var castMethod = typeof(Enumerable).GetMethod("Cast")!.MakeGenericMethod(_effectiveType);
-        return castMethod.Invoke(null, [enumerable]);
+        var cast = castMethod.Invoke(null, [enumerable])!;
+        if (_resultType.IsGenericType && _resultType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+        {
+            return cast;
+        }
+
+        var materialize = _isArray ? "ToArray" : "ToList";
+        return typeof(Enumerable).GetMethod(materialize)!.MakeGenericMethod(_effectiveType)
+            .Invoke(null, [cast]);
     }
 
     private object Execute(SqlStatement statement)
