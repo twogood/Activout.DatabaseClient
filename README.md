@@ -28,6 +28,14 @@ public interface IUserDaoAsync
     [SqlUpdate("INSERT INTO user(id, name) VALUES (@user_id, @user_name)")]
     Task InsertObjectFull([BindProperties] User user);
 
+    // Executes the statement once per item, using the item's properties
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    Task<int> InsertMany([BindMany] IEnumerable<User> users);
+
+    // Executes the statement once per item, using the item's properties
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    Task<int> InsertMany([BindMany] IEnumerable<User> users);
+
     [SqlQuery("SELECT * FROM user ORDER BY name")]
     Task<IEnumerable<User>> ListUsers();
 

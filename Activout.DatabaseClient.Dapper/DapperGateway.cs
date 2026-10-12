@@ -39,6 +39,21 @@ public class DapperGateway : IDatabaseGateway
     }
 
     /// <inheritdoc />
+    public async Task<int> ExecuteManyAsync(SqlStatement statement,
+        IEnumerable<IReadOnlyList<QueryParameter>> parameterSets)
+    {
+        var affected = 0;
+        foreach (var parameters in parameterSets)
+        {
+            affected += await _dbConnection.ExecuteAsync(statement.Sql,
+                    GetDynamicParameters(parameters), statement.Transaction)
+                .ConfigureAwait(false);
+        }
+
+        return affected;
+    }
+
+    /// <inheritdoc />
     public async Task<IEnumerable<object>> QueryAsync(SqlStatement statement)
     {
         return await _dbConnection
@@ -57,8 +72,13 @@ public class DapperGateway : IDatabaseGateway
 
     DynamicParameters GetDynamicParameters(SqlStatement statement)
     {
+        return GetDynamicParameters(statement.Parameters);
+    }
+
+    DynamicParameters GetDynamicParameters(IEnumerable<QueryParameter> parameters)
+    {
         var dynamicParameters = new DynamicParameters();
-        foreach (var p in statement.Parameters)
+        foreach (var p in parameters)
         {
             dynamicParameters.Add(_parameterPrefix + p.Name, p.Value);
         }
