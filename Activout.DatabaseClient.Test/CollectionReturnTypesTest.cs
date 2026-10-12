@@ -101,6 +101,6 @@ public class CollectionReturnTypesTest
     {
         var gateway = new DapperGateway(new SqliteConnection("Data Source=:memory:"));
         Assert.Throws<NotSupportedException>(() =>
-            new DatabaseClientBuilder().With(gateway).Build<IUnsupportedCollectionDao>().AsHashSet());
+            new DatabaseClientBuilder().With(gateway).Build<IUnsupportedCollectionDao>());
     }
 }

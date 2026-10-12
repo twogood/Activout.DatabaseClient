@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Data;
+using System.Linq;
 using System.Reflection;
 using Activout.DatabaseClient.Attributes;
 
@@ -17,9 +18,32 @@ internal class DatabaseClient : DispatchProxy
     internal static T Create<T>(IDatabaseGateway gateway) where T : class
     {
         var proxy = Create<T, DatabaseClient>();
-        ((DatabaseClient)(object)proxy)._gateway = gateway;
+        var client = (DatabaseClient)(object)proxy;
+        client._gateway = gateway;
+        client.ValidateMethods(typeof(T));
         return proxy;
     }
+
+    private void ValidateMethods(Type daoType)
+    {
+        foreach (var type in new[] { daoType }.Concat(daoType.GetInterfaces()))
+        {
+            foreach (var method in type.GetMethods())
+            {
+                if (method.GetCustomAttribute<AbstractSqlAttribute>() != null)
+                {
+                    GetHandler(method);
+                }
+            }
+        }
+    }
+
+    private MethodHandler GetHandler(MethodInfo method) =>
+        _methodHandlers.GetOrAdd(method, m =>
+            new MethodHandler(m,
+                m.GetCustomAttribute<AbstractSqlAttribute>() ??
+                throw new NotSupportedException($"{m.Name} has no SQL attribute"),
+                _gateway));
 
     /// <inheritdoc />
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
@@ -29,11 +53,7 @@ internal class DatabaseClient : DispatchProxy
             return _gateway.BeginTransaction((IsolationLevel)args![0]!);
         }
 
-        var handler =_methodHandlers.GetOrAdd(targetMethod!, method =>
-            new MethodHandler(method,
-                method.GetCustomAttribute<AbstractSqlAttribute>() ??
-                throw new NotSupportedException($"{method.Name} has no SQL attribute"),
-                _gateway));
+        var handler = GetHandler(targetMethod);
         return handler.Call(args ?? []);
     }
 }
