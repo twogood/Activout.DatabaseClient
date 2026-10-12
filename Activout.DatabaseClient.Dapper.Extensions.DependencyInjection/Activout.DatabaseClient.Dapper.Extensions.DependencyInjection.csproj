@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <LangVersion>default</LangVersion>
+        <TargetFramework>net8.0</TargetFramework>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <Title>Activout Database Client - Dapper Dependency Injection extensions</Title>
+        <Description>Microsoft.Extensions.DependencyInjection extensions for Activout.DatabaseClient.Dapper.</Description>
+        <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Activout.DatabaseClient.Dapper\Activout.DatabaseClient.Dapper.csproj"/>
+        <ProjectReference Include="..\Activout.DatabaseClient.Extensions.DependencyInjection\Activout.DatabaseClient.Extensions.DependencyInjection.csproj"/>
+        <None Include="README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+</Project>
