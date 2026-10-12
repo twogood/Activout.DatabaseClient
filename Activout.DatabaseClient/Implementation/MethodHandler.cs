@@ -164,8 +164,16 @@ internal class MethodHandler
         }
 
         var materialize = _isArray ? "ToArray" : "ToList";
-        return typeof(Enumerable).GetMethod(materialize)!.MakeGenericMethod(_effectiveType)
-            .Invoke(null, [cast]);
+        try
+        {
+            return typeof(Enumerable).GetMethod(materialize)!.MakeGenericMethod(_effectiveType)
+                .Invoke(null, [cast]);
+        }
+        catch (TargetInvocationException e) when (e.InnerException is not null)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+            throw;
+        }
     }
 
     private object Execute(SqlStatement statement)
