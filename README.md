@@ -95,6 +95,21 @@ public class SomeService(IDatabaseClient databaseClient)
 ```
 
 
+### Shared connection and cross-DAO transactions
+
+The `Activout.DatabaseClient.Dapper.Extensions.DependencyInjection` package reduces the boilerplate:
+
+```C#
+builder.Services.AddScoped<IDbConnection>(_ => new NpgsqlConnection(connectionString));
+builder.Services.AddDapperDatabaseClient<IOrdersDao>();
+builder.Services.AddDapperDatabaseClient<IBooksDao>();
+```
+
+A transaction can be passed from one DAO to another only if all of them use the same connection, so register the
+`IDbConnection` as scoped. The container owns and disposes the connection, and `DapperGateway` opens it if closed.
+For other gateways, use `AddDatabaseClient<TDao>(gatewayFactory)` from
+`Activout.DatabaseClient.Extensions.DependencyInjection`.
+
 ## Collaborate
 This project is still under development - participation welcome!
 
