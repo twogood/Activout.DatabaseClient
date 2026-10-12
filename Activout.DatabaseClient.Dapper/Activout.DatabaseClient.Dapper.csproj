@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <LangVersion>default</LangVersion>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Title>Activout Database Client - Dapper backend</Title>
         <Description>Dapper Backend for Activout.DatabaseClient.</Description>
