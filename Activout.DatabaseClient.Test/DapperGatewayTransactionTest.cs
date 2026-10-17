@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -24,6 +25,9 @@ public interface IUserDaoWithTransactions : IWithTransactions
 
     [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
     Task<int> InsertManyWithShared(int id, [BindMany] IEnumerable<UserNameOnly> users, IDbTransaction? transaction);
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    Task<int> InsertManyNonGeneric([BindMany] System.Collections.ArrayList users, IDbTransaction? transaction);
 
     [SqlQuery("SELECT * FROM user ORDER BY name")]
     Task<IEnumerable<User>> ListUsers(IDbTransaction? transaction);
@@ -110,5 +114,11 @@ public class DapperGatewayTransactionTest
         await _userDao.CreateTable();
         Assert.Equal(0, await _userDao.InsertMany(Enumerable.Empty<User>(), null));
         Assert.Empty(await _userDao.ListUsers(null));
+    }
+
+    [Fact]
+    public async Task TestBindManyRejectsNonGenericCollection()
+    {
+        await Assert.ThrowsAsync<NotSupportedException>(() => _userDao.InsertManyNonGeneric([], null));
     }
 }

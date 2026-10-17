@@ -23,6 +23,7 @@ internal class MethodHandler
     private readonly int _transactionIndex;
     private readonly bool _isArray;
     private readonly int _bindManyIndex;
+    private readonly Type? _bindManyItemType;
     private readonly Type _resultType;
 
     private static readonly HashSet<Type> SupportedCollectionDefinitions =
@@ -50,7 +51,7 @@ internal class MethodHandler
             p => p.GetCustomAttribute<BindManyAttribute>() != null);
         if (_bindManyIndex >= 0)
         {
-            ValidateBindMany(methodParameters);
+            _bindManyItemType = ValidateBindMany(methodParameters);
         }
 
         var returnType = _method.ReturnType;
@@ -83,7 +84,7 @@ internal class MethodHandler
         _effectiveType = elementType ?? resultType;
     }
 
-    private void ValidateBindMany(ParameterInfo[] parameters)
+    private Type ValidateBindMany(ParameterInfo[] parameters)
     {
         if (!_isUpdate)
         {
@@ -97,17 +98,27 @@ internal class MethodHandler
         }
 
         var parameter = parameters[_bindManyIndex];
-        if (parameter.GetCustomAttribute<BindPropertiesAttribute>() != null ||
-            !IsEnumerable(parameter.ParameterType))
+        var itemType = GetEnumerableItemType(parameter.ParameterType);
+        if (parameter.GetCustomAttribute<BindPropertiesAttribute>() != null || itemType == null)
         {
             throw new NotSupportedException(
                 $"[BindMany] parameter {parameter.Name} must be an IEnumerable<T> without [BindProperties].");
         }
+
+        return itemType;
     }
 
-    private static bool IsEnumerable(Type type)
+    private static Type? GetEnumerableItemType(Type type)
     {
-        return type != typeof(string) && !type.IsPrimitive && typeof(System.Collections.IEnumerable).IsAssignableFrom(type);
+        if (type == typeof(string)) return null;
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+        {
+            return type.GenericTypeArguments[0];
+        }
+
+        return type.GetInterfaces()
+            .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            ?.GenericTypeArguments[0];
     }
 
     private static Type? GetElementType(Type resultType, out bool isArray)
@@ -241,7 +252,7 @@ internal class MethodHandler
             }
 
             var set = new List<QueryParameter>(statement.Parameters);
-            foreach (var property in item.GetType().GetProperties())
+            foreach (var property in _bindManyItemType!.GetProperties())
             {
                 var propertyName = GetName(property);
                 var propertyValue = property.GetValue(item);
