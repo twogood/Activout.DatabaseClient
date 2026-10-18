@@ -22,6 +22,8 @@ internal class MethodHandler
     private readonly Func<Task<object?>, object>? _taskConverter;
     private readonly int _transactionIndex;
     private readonly bool _isArray;
+    private readonly int _bindManyIndex;
+    private readonly Type? _bindManyItemType;
     private readonly Type _resultType;
 
     private static readonly HashSet<Type> SupportedCollectionDefinitions =
@@ -43,6 +45,14 @@ internal class MethodHandler
         _gateway = gateway;
         _transactionIndex = Array.FindIndex(method.GetParameters(),
             p => typeof(IDbTransaction).IsAssignableFrom(p.ParameterType));
+
+        var methodParameters = method.GetParameters();
+        _bindManyIndex = Array.FindIndex(methodParameters,
+            p => p.GetCustomAttribute<BindManyAttribute>() != null);
+        if (_bindManyIndex >= 0)
+        {
+            _bindManyItemType = ValidateBindMany(methodParameters);
+        }
 
         var returnType = _method.ReturnType;
         if (returnType == typeof(Task))
@@ -72,6 +82,43 @@ internal class MethodHandler
         _isResultEnumerable = elementType != null;
         _resultType = resultType;
         _effectiveType = elementType ?? resultType;
+    }
+
+    private Type ValidateBindMany(ParameterInfo[] parameters)
+    {
+        if (!_isUpdate)
+        {
+            throw new NotSupportedException(
+                $"[BindMany] is only supported on [SqlUpdate] methods ({_method.Name}).");
+        }
+
+        if (parameters.Count(p => p.GetCustomAttribute<BindManyAttribute>() != null) > 1)
+        {
+            throw new NotSupportedException($"Only one [BindMany] parameter is supported ({_method.Name}).");
+        }
+
+        var parameter = parameters[_bindManyIndex];
+        var itemType = GetEnumerableItemType(parameter.ParameterType);
+        if (parameter.GetCustomAttribute<BindPropertiesAttribute>() != null || itemType == null)
+        {
+            throw new NotSupportedException(
+                $"[BindMany] parameter {parameter.Name} must be an IEnumerable<T> without [BindProperties].");
+        }
+
+        return itemType;
+    }
+
+    private static Type? GetEnumerableItemType(Type type)
+    {
+        if (type == typeof(string)) return null;
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+        {
+            return type.GenericTypeArguments[0];
+        }
+
+        return type.GetInterfaces()
+            .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            ?.GenericTypeArguments[0];
     }
 
     private static Type? GetElementType(Type resultType, out bool isArray)
@@ -119,6 +166,11 @@ internal class MethodHandler
 
         try
         {
+            if (_bindManyIndex >= 0)
+            {
+                return ExecuteMany(statement, args);
+            }
+
             if (_isUpdate)
             {
                 return Execute(statement);
@@ -182,12 +234,60 @@ internal class MethodHandler
         return _isAsync ? task : task.Result;
     }
 
+    private object ExecuteMany(SqlStatement statement, object?[] args)
+    {
+        var parameter = _method.GetParameters()[_bindManyIndex];
+        if (args[_bindManyIndex] is not System.Collections.IEnumerable items)
+        {
+            throw new ArgumentNullException(parameter.Name, "Value of [BindMany] parameter cannot be null.");
+        }
+
+        var parameterName = GetName(parameter);
+        var properties = _bindManyItemType!.GetProperties();
+        var names = new HashSet<string>(statement.Parameters.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
+        foreach (var property in properties)
+        {
+            var propertyName = GetName(property);
+            foreach (var name in new[] { propertyName, $"{parameterName}_{propertyName}" })
+            {
+                if (!names.Add(name))
+                {
+                    throw new NotSupportedException(
+                        $"[BindMany] parameter {parameter.Name} has overlapping binding '{name}' ({_method.Name}).");
+                }
+            }
+        }
+
+        var sets = new List<IReadOnlyList<QueryParameter>>();
+        foreach (var item in items)
+        {
+            if (item == null)
+            {
+                throw new ArgumentException("[BindMany] parameter cannot contain null items.", parameter.Name);
+            }
+
+            var set = new List<QueryParameter>(statement.Parameters);
+            foreach (var property in properties)
+            {
+                var propertyName = GetName(property);
+                var propertyValue = property.GetValue(item);
+                set.Add(new QueryParameter(propertyName, propertyValue));
+                set.Add(new QueryParameter($"{parameterName}_{propertyName}", propertyValue));
+            }
+
+            sets.Add(set);
+        }
+
+        var task = _gateway.ExecuteManyAsync(statement, sets);
+        return _isAsync ? task : task.Result;
+    }
+
     private void AddSqlStatementParameters(object?[] args, SqlStatement statement)
     {
         var parameters = _method.GetParameters();
         for (var index = 0; index < parameters.Length; index++)
         {
-            if (index == _transactionIndex) continue;
+            if (index == _transactionIndex || index == _bindManyIndex) continue;
 
             var parameter = parameters[index];
             var value = args[index];
@@ -215,6 +315,15 @@ internal class MethodHandler
                     statement.Parameters.Add(new QueryParameter(propertyName, propertyValue));
                     statement.Parameters.Add(new QueryParameter($"{parameterName}_{propertyName}", propertyValue));
                 }
+            }
+        }
+
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var parameter in statement.Parameters)
+        {
+            if (!names.Add(parameter.Name))
+            {
+                throw new NotSupportedException($"Overlapping binding '{parameter.Name}' ({_method.Name}).");
             }
         }
     }

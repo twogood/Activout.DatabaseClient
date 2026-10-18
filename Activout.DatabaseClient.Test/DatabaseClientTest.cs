@@ -30,6 +30,21 @@ public interface IUserDao
     [SqlUpdate("INSERT INTO user(id, name) VALUES (@user_id, @user_Name)")]
     int InsertObjectFull([BindProperties] User user);
 
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    void InsertObjectWithShared(int id, [BindProperties] User user);
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    void InsertObjectWithSharedAfter([BindProperties] User user, int id);
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    void InsertObjectWithAlias([Bind("user_Name")] string name, [BindProperties] User user);
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    void InsertObjectWithCase([Bind("ID")] int id, [BindProperties] User user);
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    void InsertObjects([BindProperties] User user, [BindProperties] User other);
+
     [SqlQuery("SELECT * FROM user ORDER BY name")]
     IEnumerable<User> ListUsers();
 
@@ -101,6 +116,22 @@ public class DatabaseClientTest
         Assert.Throws<ArgumentNullException>(() => _userDao.InsertObject(null!));
 
         // Assert
+    }
+
+    [Fact]
+    public void TestBindPropertiesRejectsOverlappingNamesBeforeWriting()
+    {
+        _userDao.CreateTable();
+        var user = new User { Id = 1, Name = "one" };
+
+        var error = Assert.Throws<NotSupportedException>(() => _userDao.InsertObjectWithShared(99, user));
+        Assert.Contains("id", error.Message);
+        Assert.Throws<NotSupportedException>(() => _userDao.InsertObjectWithSharedAfter(user, 99));
+        error = Assert.Throws<NotSupportedException>(() => _userDao.InsertObjectWithAlias("shared", user));
+        Assert.Contains("user_Name", error.Message);
+        Assert.Throws<NotSupportedException>(() => _userDao.InsertObjectWithCase(99, user));
+        Assert.Throws<NotSupportedException>(() => _userDao.InsertObjects(user, user));
+        Assert.Empty(_userDao.ListUsers());
     }
 
     [Fact]
