@@ -317,6 +317,15 @@ internal class MethodHandler
                 }
             }
         }
+
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var parameter in statement.Parameters)
+        {
+            if (!names.Add(parameter.Name))
+            {
+                throw new NotSupportedException($"Overlapping binding '{parameter.Name}' ({_method.Name}).");
+            }
+        }
     }
 
     [SuppressMessage("SonarCloud", "S1523")]
