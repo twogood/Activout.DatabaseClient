@@ -243,6 +243,21 @@ internal class MethodHandler
         }
 
         var parameterName = GetName(parameter);
+        var properties = _bindManyItemType!.GetProperties();
+        var names = new HashSet<string>(statement.Parameters.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
+        foreach (var property in properties)
+        {
+            var propertyName = GetName(property);
+            foreach (var name in new[] { propertyName, $"{parameterName}_{propertyName}" })
+            {
+                if (!names.Add(name))
+                {
+                    throw new NotSupportedException(
+                        $"[BindMany] parameter {parameter.Name} has overlapping binding '{name}' ({_method.Name}).");
+                }
+            }
+        }
+
         var sets = new List<IReadOnlyList<QueryParameter>>();
         foreach (var item in items)
         {
@@ -252,7 +267,7 @@ internal class MethodHandler
             }
 
             var set = new List<QueryParameter>(statement.Parameters);
-            foreach (var property in _bindManyItemType!.GetProperties())
+            foreach (var property in properties)
             {
                 var propertyName = GetName(property);
                 var propertyValue = property.GetValue(item);

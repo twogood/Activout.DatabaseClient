@@ -27,6 +27,15 @@ public interface IUserDaoWithTransactions : IWithTransactions
     Task<int> InsertManyWithShared(int id, [BindMany] IEnumerable<UserNameOnly> users, IDbTransaction? transaction);
 
     [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    Task<int> InsertManyWithOverlappingId(int id, [BindMany] IEnumerable<User> users);
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    Task<int> InsertManyWithOverlappingAlias([Bind("users_Name")] string name, [BindMany] IEnumerable<User> users);
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
+    Task<int> InsertManyWithOverlappingCase([Bind("ID")] int id, [BindMany] IEnumerable<User> users);
+
+    [SqlUpdate("INSERT INTO user(id, name) VALUES (@id, @Name)")]
     Task<int> InsertManyNonGeneric([BindMany] System.Collections.ArrayList users, IDbTransaction? transaction);
 
     [SqlQuery("SELECT * FROM user ORDER BY name")]
@@ -120,5 +129,21 @@ public class DapperGatewayTransactionTest
     public async Task TestBindManyRejectsNonGenericCollection()
     {
         await Assert.ThrowsAsync<NotSupportedException>(() => _userDao.InsertManyNonGeneric([], null));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TestBindManyRejectsOverlappingNamesBeforeWriting(bool empty)
+    {
+        await _userDao.CreateTable();
+        var users = empty ? Array.Empty<User>() : new[] { new User { Id = 1, Name = "one" } };
+
+        var error = await Assert.ThrowsAsync<NotSupportedException>(() => _userDao.InsertManyWithOverlappingId(99, users));
+        Assert.Contains("id", error.Message);
+        error = await Assert.ThrowsAsync<NotSupportedException>(() => _userDao.InsertManyWithOverlappingAlias("shared", users));
+        Assert.Contains("users_Name", error.Message);
+        await Assert.ThrowsAsync<NotSupportedException>(() => _userDao.InsertManyWithOverlappingCase(99, users));
+        Assert.Empty(await _userDao.ListUsers(null));
     }
 }
