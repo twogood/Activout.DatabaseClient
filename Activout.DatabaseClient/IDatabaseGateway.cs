@@ -41,6 +41,12 @@ public interface IDatabaseGateway
     /// <returns>The number of affected rows.</returns>
     Task<int> ExecuteAsync(SqlStatement statement);
 
+    /// <summary>Executes a statement once for each parameter set, in the statement's transaction.</summary>
+    /// <param name="statement">The statement. Its <see cref="SqlStatement.Parameters"/> are not used.</param>
+    /// <param name="parameterSets">One list of parameters for each execution.</param>
+    /// <returns>The total number of affected rows.</returns>
+    Task<int> ExecuteManyAsync(SqlStatement statement, IEnumerable<IReadOnlyList<QueryParameter>> parameterSets);
+
     /// <summary>Runs a query and maps all rows to <see cref="SqlStatement.EffectiveType"/>.</summary>
     /// <param name="statement">The statement.</param>
     /// <returns>The mapped rows.</returns>
