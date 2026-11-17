@@ -110,6 +110,16 @@ A transaction can be passed from one DAO to another only if all of them use the 
 For other gateways, use `AddDatabaseClient<TDao>(gatewayFactory)` from
 `Activout.DatabaseClient.Extensions.DependencyInjection`.
 
+### libSQL (Bunny Database, Turso)
+
+`DapperGateway` cannot talk to the libSQL provider. Use `LibSqlGateway` from the `Activout.DatabaseClient.LibSql`
+package instead. It also works against a local SQLite file, so tests can run on SQLite:
+
+```C#
+builder.Services.AddScoped(_ => LibSqlConnectionFactory.Create(connectionString));
+builder.Services.AddDatabaseClient<IOrdersDao>(sp => new LibSqlGateway(sp.GetRequiredService<DbConnection>()));
+```
+
 ## Collaborate
 This project is still under development - participation welcome!
 

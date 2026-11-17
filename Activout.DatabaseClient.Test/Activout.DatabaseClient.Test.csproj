@@ -26,6 +26,7 @@
       <ProjectReference Include="..\Activout.DatabaseClient.Dapper\Activout.DatabaseClient.Dapper.csproj" />
       <ProjectReference Include="..\Activout.DatabaseClient\Activout.DatabaseClient.csproj" />
       <ProjectReference Include="..\Activout.DatabaseClient.Dapper.Extensions.DependencyInjection\Activout.DatabaseClient.Dapper.Extensions.DependencyInjection.csproj" />
+      <ProjectReference Include="..\Activout.DatabaseClient.LibSql\Activout.DatabaseClient.LibSql.csproj" />
     </ItemGroup>
 
 </Project>
