@@ -11,12 +11,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Dapper" Version="2.1.89"/>
         <PackageReference Include="Nelknet.LibSQL.Data" Version="0.2.13"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Activout.DatabaseClient\Activout.DatabaseClient.csproj"/>
+        <ProjectReference Include="..\Activout.DatabaseClient.Dapper\Activout.DatabaseClient.Dapper.csproj"/>
         <None Include="README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
 

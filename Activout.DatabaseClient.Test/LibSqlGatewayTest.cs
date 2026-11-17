@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using Activout.DatabaseClient.Attributes;
+using Activout.DatabaseClient.Dapper;
 using Activout.DatabaseClient.Implementation;
 using Activout.DatabaseClient.LibSql;
 using Microsoft.Data.Sqlite;
@@ -50,18 +52,41 @@ public interface IThingDao : IWithTransactions
               """)]
     Task<Thing?> Find([Bind("id")] Guid id);
 
+    [SqlQuery("""
+              SELECT id, name, created_at AS CreatedAt, deleted_at AS DeletedAt, parent_id AS ParentId, active, colour
+              FROM thing
+              """)]
+    Task<IEnumerable<Thing>> All();
+
     [SqlQuery("SELECT name FROM thing ORDER BY name")]
     Task<IEnumerable<string>> ListNames();
 
     [SqlQuery("SELECT COUNT(*) FROM thing")]
     Task<long> Count();
+
+    [SqlUpdate("INSERT INTO thing (id, name, created_at, active, colour) VALUES ('not-a-guid', 'z', '', 0, 'Red')")]
+    Task InsertUnparsableRow();
+
+    [SqlQuery("SELECT id FROM thing ORDER BY name")]
+    Task<Guid?> FirstId();
+
+    [SqlQuery("SELECT 1 AS value UNION ALL SELECT 1.5")]
+    Task<IEnumerable<object>> MixedTypes();
+
+    [SqlQuery("SELECT 'first' AS name, 'second' AS name")]
+    Task<Thing?> DuplicateColumnNames();
 }
 
 public class LibSqlGatewayTest
 {
-    private readonly IThingDao _dao = new DatabaseClientBuilder()
-        .With(new LibSqlGateway(new SqliteConnection("Data Source=:memory:")))
-        .Build<IThingDao>();
+    private readonly SqliteConnection _connection = new("Data Source=:memory:");
+    private readonly IThingDao _dao;
+
+    public LibSqlGatewayTest()
+    {
+        SqliteTypeHandlers.Register();
+        _dao = new DatabaseClientBuilder().With(new LibSqlGateway(_connection)).Build<IThingDao>();
+    }
 
     [Fact]
     public async Task RoundTripsGuidDateTimeBoolAndEnum()
@@ -119,5 +144,51 @@ public class LibSqlGatewayTest
         }
 
         Assert.Equal(0, await _dao.Count());
+    }
+
+    [Fact]
+    public async Task KeepsEachValueWhenAColumnHasMixedTypes()
+    {
+        var values = (await _dao.MixedTypes()).Select(row => ((IDictionary<string, object>)row)["value"]);
+        Assert.Equal(new object[] { 1L, 1.5 }, values);
+    }
+
+    [Fact]
+    public async Task MapsDuplicateColumnNamesLikeDapperGateway()
+    {
+        var thing = await _dao.DuplicateColumnNames();
+        Assert.Equal("second", thing?.Name);
+    }
+
+    [Fact]
+    public async Task FirstOrDefaultReadsOnlyTheFirstRow()
+    {
+        await _dao.CreateTable();
+        var id = Guid.NewGuid();
+        await _dao.Insert(id, "a", DateTime.UtcNow, null, null, false, Colour.Red);
+        await _dao.InsertUnparsableRow();
+
+        Assert.Equal(id, await _dao.FirstId());
+    }
+
+    [Fact]
+    public async Task DapperGatewayReadsWhatLibSqlGatewayWrote()
+    {
+        await _dao.CreateTable();
+        var id = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var created = new DateTime(2026, 12, 1, 23, 59, 59, 123, DateTimeKind.Utc);
+        await _dao.Insert(id, "a", created, created, parent, true, Colour.Green);
+
+        var dapperDao = new DatabaseClientBuilder().With(new DapperGateway(_connection)).Build<IThingDao>();
+        var thing = Assert.Single(await dapperDao.All());
+
+        Assert.Equal(id, thing.Id);
+        Assert.Equal(created, thing.CreatedAt);
+        Assert.Equal(DateTimeKind.Utc, thing.CreatedAt.Kind);
+        Assert.Equal(created, thing.DeletedAt);
+        Assert.Equal(parent, thing.ParentId);
+        Assert.True(thing.Active);
+        Assert.Equal(Colour.Green, thing.Colour);
     }
 }

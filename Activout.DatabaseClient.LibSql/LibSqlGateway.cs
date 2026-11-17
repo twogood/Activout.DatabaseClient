@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using Activout.DatabaseClient.Dapper;
 using Dapper;
 
 namespace Activout.DatabaseClient.LibSql;
@@ -15,23 +15,13 @@ namespace Activout.DatabaseClient.LibSql;
 /// <remarks>
 /// Commands are built with plain ADO.NET, because Dapper removes the <c>@</c> from parameter names and the libSQL
 /// provider needs it. Dapper only maps the rows. Values are stored in SQLite-friendly forms so that SQLite and libSQL
-/// behave the same: <see cref="Guid"/> as text, <see cref="DateTime"/> as UTC text in <see cref="DateTimeFormat"/>,
-/// <see cref="bool"/> as 0/1 and enums by name. The Guid and DateTime type handlers are registered globally with Dapper.
+/// behave the same: <see cref="Guid"/> as text, <see cref="DateTime"/> as UTC text in
+/// <see cref="SqliteTypeHandlers.DateTimeFormat"/>, <see cref="bool"/> as 0/1 and enums by name. To read Guid and
+/// DateTime values back, call <see cref="SqliteTypeHandlers.Register"/> once at startup.
 /// </remarks>
 public class LibSqlGateway : IDatabaseGateway
 {
-    /// <summary>The format <see cref="DateTime"/> values are stored in, always in UTC.</summary>
-    public const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.fff";
-
     private readonly DbConnection _connection;
-
-    static LibSqlGateway()
-    {
-        SqlMapper.AddTypeHandler(new GuidHandler());
-        SqlMapper.AddTypeHandler(new NullableGuidHandler());
-        SqlMapper.AddTypeHandler(new DateTimeHandler());
-        SqlMapper.AddTypeHandler(new NullableDateTimeHandler());
-    }
 
     /// <summary>Creates the gateway. The connection is opened when first used.</summary>
     /// <param name="connection">A libSQL connection, or any SQLite connection such as one from Microsoft.Data.Sqlite.</param>
@@ -55,37 +45,12 @@ public class LibSqlGateway : IDatabaseGateway
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<object>> QueryAsync(SqlStatement statement)
-    {
-        await using var command = await CreateCommand(statement).ConfigureAwait(false);
-        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
-        // Rows are buffered into a DataTable and mapped from there: the libSQL provider's reader does not support
-        // the schema calls Dapper makes while a result is being read.
-        var names = Enumerable.Range(0, reader.FieldCount).Select(reader.GetName).ToArray();
-        var rows = new List<object?[]>();
-        while (await reader.ReadAsync().ConfigureAwait(false))
-        {
-            var row = new object?[names.Length];
-            for (var i = 0; i < names.Length; i++) row[i] = reader.IsDBNull(i) ? null : reader.GetValue(i);
-            rows.Add(row);
-        }
-
-        using var table = new DataTable();
-        for (var i = 0; i < names.Length; i++)
-        {
-            var sample = rows.Select(r => r[i]).FirstOrDefault(v => v is not null);
-            table.Columns.Add(names[i], sample?.GetType() ?? typeof(string));
-        }
-
-        foreach (var row in rows) table.Rows.Add(row.Select(v => v ?? DBNull.Value).ToArray());
-        using var buffered = table.CreateDataReader();
-        return buffered.Parse(statement.EffectiveType).ToList();
-    }
+    public Task<IEnumerable<object>> QueryAsync(SqlStatement statement) => QueryAsync(statement, int.MaxValue);
 
     /// <inheritdoc />
     public async Task<object?> QueryFirstOrDefaultAsync(SqlStatement statement)
     {
-        return (await QueryAsync(statement).ConfigureAwait(false)).FirstOrDefault();
+        return (await QueryAsync(statement, 1).ConfigureAwait(false)).FirstOrDefault();
     }
 
     /// <summary>Converts a parameter value to the form it is stored in.</summary>
@@ -93,8 +58,8 @@ public class LibSqlGateway : IDatabaseGateway
     public static object ToDatabase(object? value) => value switch
     {
         null => DBNull.Value,
-        Guid g => g.ToString("D"),
-        DateTime d => d.ToUniversalTime().ToString(DateTimeFormat, CultureInfo.InvariantCulture),
+        Guid g => SqliteTypeHandlers.ToText(g),
+        DateTime d => SqliteTypeHandlers.ToText(d),
         bool b => b ? 1L : 0L,
         Enum e => e.ToString(),
         _ => value,
@@ -117,31 +82,22 @@ public class LibSqlGateway : IDatabaseGateway
         return command;
     }
 
-    private static DateTime ParseDateTime(object value) =>
-        DateTime.Parse((string)value, CultureInfo.InvariantCulture,
-            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-
-    private class GuidHandler : SqlMapper.TypeHandler<Guid>
+    private async Task<IEnumerable<object>> QueryAsync(SqlStatement statement, int maxRows)
     {
-        public override Guid Parse(object value) => Guid.Parse((string)value);
-        public override void SetValue(IDbDataParameter parameter, Guid value) => parameter.Value = ToDatabase(value);
-    }
+        await using var command = await CreateCommand(statement).ConfigureAwait(false);
+        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
+        // Rows are buffered and mapped from there: the libSQL provider's reader does not support the schema calls
+        // Dapper makes while a result is being read.
+        var names = Enumerable.Range(0, reader.FieldCount).Select(reader.GetName).ToArray();
+        var rows = new List<object[]>();
+        while (rows.Count < maxRows && await reader.ReadAsync().ConfigureAwait(false))
+        {
+            var row = new object[names.Length];
+            for (var i = 0; i < names.Length; i++) row[i] = reader.IsDBNull(i) ? DBNull.Value : reader.GetValue(i);
+            rows.Add(row);
+        }
 
-    private class NullableGuidHandler : SqlMapper.TypeHandler<Guid?>
-    {
-        public override Guid? Parse(object value) => value is null or DBNull ? null : Guid.Parse((string)value);
-        public override void SetValue(IDbDataParameter parameter, Guid? value) => parameter.Value = ToDatabase(value);
-    }
-
-    private class DateTimeHandler : SqlMapper.TypeHandler<DateTime>
-    {
-        public override DateTime Parse(object value) => ParseDateTime(value);
-        public override void SetValue(IDbDataParameter parameter, DateTime value) => parameter.Value = ToDatabase(value);
-    }
-
-    private class NullableDateTimeHandler : SqlMapper.TypeHandler<DateTime?>
-    {
-        public override DateTime? Parse(object value) => value is null or DBNull ? null : ParseDateTime(value);
-        public override void SetValue(IDbDataParameter parameter, DateTime? value) => parameter.Value = ToDatabase(value);
+        await using var buffered = new BufferedDataReader(names, rows);
+        return buffered.Parse(statement.EffectiveType).ToList();
     }
 }
