@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Activout.DatabaseClient.Ext
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Activout.DatabaseClient.Dapper.Extensions.DependencyInjection", "Activout.DatabaseClient.Dapper.Extensions.DependencyInjection\Activout.DatabaseClient.Dapper.Extensions.DependencyInjection.csproj", "{5B058D4C-9552-4777-BE8E-35E3A7537164}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Activout.DatabaseClient.LibSql", "Activout.DatabaseClient.LibSql\Activout.DatabaseClient.LibSql.csproj", "{B54776A0-187B-4D85-9187-A11DA5973B24}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{5B058D4C-9552-4777-BE8E-35E3A7537164}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5B058D4C-9552-4777-BE8E-35E3A7537164}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5B058D4C-9552-4777-BE8E-35E3A7537164}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B54776A0-187B-4D85-9187-A11DA5973B24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B54776A0-187B-4D85-9187-A11DA5973B24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B54776A0-187B-4D85-9187-A11DA5973B24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B54776A0-187B-4D85-9187-A11DA5973B24}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

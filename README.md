@@ -110,6 +110,20 @@ A transaction can be passed from one DAO to another only if all of them use the 
 For other gateways, use `AddDatabaseClient<TDao>(gatewayFactory)` from
 `Activout.DatabaseClient.Extensions.DependencyInjection`.
 
+### libSQL (Bunny Database, Turso)
+
+`DapperGateway` cannot talk to the libSQL provider. Use `LibSqlGateway` from the `Activout.DatabaseClient.LibSql`
+package instead. Tests can use an in-memory libSQL database (`Data Source=:memory:`):
+
+```C#
+SqliteTypeHandlers.Register();
+builder.Services.AddScoped<DbConnection>(_ => new LibSQLConnection(connectionString));
+builder.Services.AddDatabaseClient<IOrdersDao>(sp => new LibSqlGateway(sp.GetRequiredService<DbConnection>()));
+```
+
+`SqliteTypeHandlers.Register()` applies to every Dapper query in the process, including any `DapperGateway`: text
+`DateTime` values without an offset are then read as UTC. See the [package README](Activout.DatabaseClient.LibSql/README.md).
+
 ## Collaborate
 This project is still under development - participation welcome!
 
