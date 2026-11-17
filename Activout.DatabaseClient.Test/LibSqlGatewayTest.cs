@@ -60,7 +60,7 @@ public interface IThingDao : IWithTransactions
 public class LibSqlGatewayTest
 {
     private readonly IThingDao _dao = new DatabaseClientBuilder()
-        .With(new LibSqlGateway(LibSqlConnectionFactory.Create("Data Source=:memory:")))
+        .With(new LibSqlGateway(new SqliteConnection("Data Source=:memory:")))
         .Build<IThingDao>();
 
     [Fact]
@@ -119,20 +119,5 @@ public class LibSqlGatewayTest
         }
 
         Assert.Equal(0, await _dao.Count());
-    }
-
-    [Theory]
-    [InlineData("libsql://db.example.com", true)]
-    [InlineData("Data Source=https://db.example.com;Auth Token=x", true)]
-    [InlineData("Data Source=game.db", false)]
-    public void RecognisesRemoteConnectionStrings(string connectionString, bool remote)
-    {
-        Assert.Equal(remote, LibSqlConnectionFactory.IsRemote(connectionString));
-    }
-
-    [Fact]
-    public void CreatesSqliteConnectionForLocalFiles()
-    {
-        Assert.IsType<SqliteConnection>(LibSqlConnectionFactory.Create("Data Source=:memory:"));
     }
 }

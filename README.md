@@ -116,7 +116,7 @@ For other gateways, use `AddDatabaseClient<TDao>(gatewayFactory)` from
 package instead. It also works against a local SQLite file, so tests can run on SQLite:
 
 ```C#
-builder.Services.AddScoped(_ => LibSqlConnectionFactory.Create(connectionString));
+builder.Services.AddScoped<DbConnection>(_ => new LibSQLConnection(connectionString));
 builder.Services.AddDatabaseClient<IOrdersDao>(sp => new LibSqlGateway(sp.GetRequiredService<DbConnection>()));
 ```
 

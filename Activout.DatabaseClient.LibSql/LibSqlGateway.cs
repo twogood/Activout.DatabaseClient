@@ -34,7 +34,7 @@ public class LibSqlGateway : IDatabaseGateway
     }
 
     /// <summary>Creates the gateway. The connection is opened when first used.</summary>
-    /// <param name="connection">A libSQL or SQLite connection, for example from <see cref="LibSqlConnectionFactory"/>.</param>
+    /// <param name="connection">A libSQL connection, or any SQLite connection such as one from Microsoft.Data.Sqlite.</param>
     public LibSqlGateway(DbConnection connection)
     {
         _connection = connection;

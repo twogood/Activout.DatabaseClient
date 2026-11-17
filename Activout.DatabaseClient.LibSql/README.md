@@ -6,7 +6,7 @@ An `IDatabaseGateway` for [libSQL](https://github.com/tursodatabase/libsql) data
 file, so tests can run on SQLite and production on libSQL.
 
 ```C#
-var connection = LibSqlConnectionFactory.Create(connectionString); // libsql:// or https:// → libSQL, else SQLite
+var connection = new LibSQLConnection(connectionString); // or a SqliteConnection in tests
 var userDao = new DatabaseClientBuilder()
     .With(new LibSqlGateway(connection))
     .Build<IUserDao>();
