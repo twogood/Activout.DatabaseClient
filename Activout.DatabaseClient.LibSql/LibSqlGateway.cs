@@ -97,6 +97,13 @@ public class LibSqlGateway : IDatabaseGateway
             rows.Add(row);
         }
 
+        // Enums are stored as their names, but Dapper maps a scalar enum with Enum.ToObject, which rejects text.
+        var type = Nullable.GetUnderlyingType(statement.EffectiveType) ?? statement.EffectiveType;
+        if (type.IsEnum)
+            foreach (var row in rows)
+                if (row is [string name, ..])
+                    row[0] = Enum.Parse(type, name, ignoreCase: true);
+
         await using var buffered = new BufferedDataReader(names, rows);
         return buffered.Parse(statement.EffectiveType).ToList();
     }

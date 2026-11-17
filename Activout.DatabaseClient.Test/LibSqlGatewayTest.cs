@@ -73,6 +73,12 @@ public interface IThingDao : IWithTransactions
     [SqlQuery("SELECT 1 AS value UNION ALL SELECT 1.5")]
     Task<IEnumerable<object>> MixedTypes();
 
+    [SqlQuery("SELECT colour FROM thing ORDER BY name")]
+    Task<Colour?> FirstColour();
+
+    [SqlQuery("SELECT colour FROM thing ORDER BY name")]
+    Task<IEnumerable<Colour>> Colours();
+
     [SqlQuery("SELECT 'first' AS name, 'second' AS name")]
     Task<Thing?> DuplicateColumnNames();
 }
@@ -170,5 +176,17 @@ public class LibSqlGatewayTest
         await _dao.InsertUnparsableRow();
 
         Assert.Equal(id, await _dao.FirstId());
+    }
+
+    [Fact]
+    public async Task MapsTextEnumScalars()
+    {
+        await _dao.CreateTable();
+        Assert.Null(await _dao.FirstColour());
+        await _dao.Insert(Guid.NewGuid(), "a", DateTime.UtcNow, null, null, false, Colour.Green);
+        await _dao.Insert(Guid.NewGuid(), "b", DateTime.UtcNow, null, null, false, Colour.Red);
+
+        Assert.Equal(Colour.Green, await _dao.FirstColour());
+        Assert.Equal([Colour.Green, Colour.Red], await _dao.Colours());
     }
 }
