@@ -10,12 +10,12 @@ using Dapper;
 namespace Activout.DatabaseClient.LibSql;
 
 /// <summary>
-/// An <see cref="IDatabaseGateway"/> for libSQL (Bunny Database, Turso) that also works with SQLite.
+/// An <see cref="IDatabaseGateway"/> for libSQL (Bunny Database, Turso).
 /// </summary>
 /// <remarks>
 /// Commands are built with plain ADO.NET, because Dapper removes the <c>@</c> from parameter names and the libSQL
-/// provider needs it. Dapper only maps the rows. Values are stored in SQLite-friendly forms so that SQLite and libSQL
-/// behave the same: <see cref="Guid"/> as text, <see cref="DateTime"/> as UTC text in
+/// provider needs it. Dapper only maps the rows. Values are stored in SQLite-friendly forms:
+/// <see cref="Guid"/> as text, <see cref="DateTime"/> as UTC text in
 /// <see cref="SqliteTypeHandlers.DateTimeFormat"/>, <see cref="bool"/> as 0/1 and enums by name. To read Guid and
 /// DateTime values back, call <see cref="SqliteTypeHandlers.Register"/> once at startup.
 /// </remarks>
@@ -24,7 +24,7 @@ public class LibSqlGateway : IDatabaseGateway
     private readonly DbConnection _connection;
 
     /// <summary>Creates the gateway. The connection is opened when first used.</summary>
-    /// <param name="connection">A libSQL connection, or any SQLite connection such as one from Microsoft.Data.Sqlite.</param>
+    /// <param name="connection">A libSQL connection. Use <c>Data Source=:memory:</c> in tests.</param>
     public LibSqlGateway(DbConnection connection)
     {
         _connection = connection;

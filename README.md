@@ -113,7 +113,7 @@ For other gateways, use `AddDatabaseClient<TDao>(gatewayFactory)` from
 ### libSQL (Bunny Database, Turso)
 
 `DapperGateway` cannot talk to the libSQL provider. Use `LibSqlGateway` from the `Activout.DatabaseClient.LibSql`
-package instead. It also works against a local SQLite file, so tests can run on SQLite:
+package instead. Tests can use an in-memory libSQL database (`Data Source=:memory:`):
 
 ```C#
 SqliteTypeHandlers.Register();

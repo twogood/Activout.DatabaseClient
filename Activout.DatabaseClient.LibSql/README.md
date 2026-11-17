@@ -2,12 +2,12 @@
 
 An `IDatabaseGateway` for [libSQL](https://github.com/tursodatabase/libsql) databases such as
 [Bunny Database](https://bunny.net/database/) and Turso, built on
-[Nelknet.LibSQL.Data](https://www.nuget.org/packages/Nelknet.LibSQL.Data). It works the same against a local SQLite
-file, so tests can run on SQLite and production on libSQL.
+[Nelknet.LibSQL.Data](https://www.nuget.org/packages/Nelknet.LibSQL.Data). Nelknet bundles the libSQL engine, so tests
+can use an in-memory database (`Data Source=:memory:`) with the same provider as production.
 
 ```C#
 SqliteTypeHandlers.Register(); // once at startup, so Guid and DateTime can be read back
-var connection = new LibSQLConnection(connectionString); // or a SqliteConnection in tests
+var connection = new LibSQLConnection(connectionString); // "Data Source=:memory:" in tests
 var userDao = new DatabaseClientBuilder()
     .With(new LibSqlGateway(connection))
     .Build<IUserDao>();
@@ -22,6 +22,3 @@ Values are stored in SQLite-friendly forms: `Guid` as text, `DateTime` as UTC te
 `SqliteTypeHandlers` (from `Activout.DatabaseClient.Dapper`) lets Dapper read `Guid` and `DateTime` values stored as
 text. Dapper's type handlers are global, so it also applies to any `DapperGateway` in the process: values stored as
 text are parsed, and native `Guid` and `DateTime` values from other databases are returned unchanged.
-
-A `DapperGateway` on Microsoft.Data.Sqlite can read what `LibSqlGateway` writes, but writes `Guid` in upper case and
-`DateTime` in the provider's own format. Let one gateway write a given table.

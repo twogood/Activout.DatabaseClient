@@ -5,7 +5,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Title>Activout Database Client - libSQL backend</Title>
-        <Description>libSQL (Turso, Bunny Database) and SQLite backend for Activout.DatabaseClient.</Description>
+        <Description>libSQL (Turso, Bunny Database) backend for Activout.DatabaseClient.</Description>
         <Nullable>enable</Nullable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>

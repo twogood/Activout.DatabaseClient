@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Activout.DatabaseClient.Attributes;
 using Activout.DatabaseClient.Dapper;
 using Activout.DatabaseClient.Implementation;
 using Activout.DatabaseClient.LibSql;
-using Microsoft.Data.Sqlite;
 using Nelknet.LibSQL.Data;
 using Xunit;
 
@@ -79,56 +77,28 @@ public interface IThingDao : IWithTransactions
     Task<Thing?> DuplicateColumnNames();
 }
 
-/// <summary>Runs the tests on the native libSQL engine, the same provider as production.</summary>
-public class LibSqlGatewayOnLibSqlTest() : LibSqlGatewayTest(new LibSQLConnection("Data Source=:memory:"));
-
-/// <summary>Runs the tests on Microsoft.Data.Sqlite, which callers may use for their own tests.</summary>
-public class LibSqlGatewayOnSqliteTest() : LibSqlGatewayTest(new SqliteConnection("Data Source=:memory:"))
+public class LibSqlGatewayTest
 {
-    [Fact]
-    public async Task DapperGatewayReadsWhatLibSqlGatewayWrote()
-    {
-        await Dao.CreateTable();
-        var id = Guid.NewGuid();
-        var parent = Guid.NewGuid();
-        var created = new DateTime(2026, 12, 1, 23, 59, 59, 123, DateTimeKind.Utc);
-        await Dao.Insert(id, "a", created, created, parent, true, Colour.Green);
+    private readonly IThingDao _dao;
 
-        var dapperDao = new DatabaseClientBuilder().With(new DapperGateway(Connection)).Build<IThingDao>();
-        var thing = Assert.Single(await dapperDao.All());
-
-        Assert.Equal(id, thing.Id);
-        Assert.Equal(created, thing.CreatedAt);
-        Assert.Equal(DateTimeKind.Utc, thing.CreatedAt.Kind);
-        Assert.Equal(created, thing.DeletedAt);
-        Assert.Equal(parent, thing.ParentId);
-        Assert.True(thing.Active);
-        Assert.Equal(Colour.Green, thing.Colour);
-    }
-}
-
-public abstract class LibSqlGatewayTest
-{
-    protected readonly DbConnection Connection;
-    protected readonly IThingDao Dao;
-
-    protected LibSqlGatewayTest(DbConnection connection)
+    public LibSqlGatewayTest()
     {
         SqliteTypeHandlers.Register();
-        Connection = connection;
-        Dao = new DatabaseClientBuilder().With(new LibSqlGateway(connection)).Build<IThingDao>();
+        _dao = new DatabaseClientBuilder()
+            .With(new LibSqlGateway(new LibSQLConnection("Data Source=:memory:")))
+            .Build<IThingDao>();
     }
 
     [Fact]
     public async Task RoundTripsGuidDateTimeBoolAndEnum()
     {
-        await Dao.CreateTable();
+        await _dao.CreateTable();
         var id = Guid.NewGuid();
         var parent = Guid.NewGuid();
         var created = new DateTime(2026, 12, 1, 23, 59, 59, 123, DateTimeKind.Utc);
 
-        await Dao.Insert(id, "a", created, null, parent, true, Colour.Green);
-        var thing = await Dao.Find(id);
+        await _dao.Insert(id, "a", created, null, parent, true, Colour.Green);
+        var thing = await _dao.Find(id);
 
         Assert.NotNull(thing);
         Assert.Equal(id, thing.Id);
@@ -143,62 +113,62 @@ public abstract class LibSqlGatewayTest
     [Fact]
     public async Task ReturnsAffectedRowsSoConflictsCanBeDetected()
     {
-        await Dao.CreateTable();
+        await _dao.CreateTable();
         var id = Guid.NewGuid();
 
-        Assert.Equal(1, await Dao.Insert(id, "a", DateTime.UtcNow, null, null, false, Colour.Red));
-        Assert.Equal(0, await Dao.Insert(id, "a", DateTime.UtcNow, null, null, false, Colour.Red));
+        Assert.Equal(1, await _dao.Insert(id, "a", DateTime.UtcNow, null, null, false, Colour.Red));
+        Assert.Equal(0, await _dao.Insert(id, "a", DateTime.UtcNow, null, null, false, Colour.Red));
     }
 
     [Fact]
     public async Task MapsScalarsAndEmptyResults()
     {
-        await Dao.CreateTable();
-        Assert.Empty(await Dao.ListNames());
-        Assert.Null(await Dao.Find(Guid.NewGuid()));
+        await _dao.CreateTable();
+        Assert.Empty(await _dao.ListNames());
+        Assert.Null(await _dao.Find(Guid.NewGuid()));
 
-        await Dao.Insert(Guid.NewGuid(), "b", DateTime.UtcNow, null, null, false, Colour.Red);
-        await Dao.Insert(Guid.NewGuid(), "a", DateTime.UtcNow, null, null, false, Colour.Red);
+        await _dao.Insert(Guid.NewGuid(), "b", DateTime.UtcNow, null, null, false, Colour.Red);
+        await _dao.Insert(Guid.NewGuid(), "a", DateTime.UtcNow, null, null, false, Colour.Red);
 
-        Assert.Equal(["a", "b"], await Dao.ListNames());
-        Assert.Equal(2, await Dao.Count());
+        Assert.Equal(["a", "b"], await _dao.ListNames());
+        Assert.Equal(2, await _dao.Count());
     }
 
     [Fact]
     public async Task RollsBackTransactions()
     {
-        await Dao.CreateTable();
-        using (var transaction = Dao.BeginTransaction())
+        await _dao.CreateTable();
+        using (var transaction = _dao.BeginTransaction())
         {
-            await Dao.Insert(Guid.NewGuid(), "a", DateTime.UtcNow, null, null, false, Colour.Red, transaction);
+            await _dao.Insert(Guid.NewGuid(), "a", DateTime.UtcNow, null, null, false, Colour.Red, transaction);
             transaction.Rollback();
         }
 
-        Assert.Equal(0, await Dao.Count());
+        Assert.Equal(0, await _dao.Count());
     }
 
     [Fact]
     public async Task KeepsEachValueWhenAColumnHasMixedTypes()
     {
-        var values = (await Dao.MixedTypes()).Select(row => ((IDictionary<string, object>)row)["value"]);
+        var values = (await _dao.MixedTypes()).Select(row => ((IDictionary<string, object>)row)["value"]);
         Assert.Equal(new object[] { 1L, 1.5 }, values);
     }
 
     [Fact]
     public async Task MapsDuplicateColumnNamesLikeDapperGateway()
     {
-        var thing = await Dao.DuplicateColumnNames();
+        var thing = await _dao.DuplicateColumnNames();
         Assert.Equal("second", thing?.Name);
     }
 
     [Fact]
     public async Task FirstOrDefaultReadsOnlyTheFirstRow()
     {
-        await Dao.CreateTable();
+        await _dao.CreateTable();
         var id = Guid.NewGuid();
-        await Dao.Insert(id, "a", DateTime.UtcNow, null, null, false, Colour.Red);
-        await Dao.InsertUnparsableRow();
+        await _dao.Insert(id, "a", DateTime.UtcNow, null, null, false, Colour.Red);
+        await _dao.InsertUnparsableRow();
 
-        Assert.Equal(id, await Dao.FirstId());
+        Assert.Equal(id, await _dao.FirstId());
     }
 }
