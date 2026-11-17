@@ -121,6 +121,9 @@ builder.Services.AddScoped<DbConnection>(_ => new LibSQLConnection(connectionStr
 builder.Services.AddDatabaseClient<IOrdersDao>(sp => new LibSqlGateway(sp.GetRequiredService<DbConnection>()));
 ```
 
+`SqliteTypeHandlers.Register()` applies to every Dapper query in the process, including any `DapperGateway`: text
+`DateTime` values without an offset are then read as UTC. See the [package README](Activout.DatabaseClient.LibSql/README.md).
+
 ## Collaborate
 This project is still under development - participation welcome!
 

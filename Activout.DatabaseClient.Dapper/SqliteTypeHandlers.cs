@@ -16,7 +16,10 @@ namespace Activout.DatabaseClient.Dapper;
 /// </remarks>
 public static class SqliteTypeHandlers
 {
-    /// <summary>The format <see cref="DateTime"/> values are stored in, always in UTC.</summary>
+    /// <summary>
+    /// The format <see cref="DateTime"/> values are stored in, always in UTC. It keeps milliseconds, as SQLite's own
+    /// date format does, so sub-millisecond ticks are dropped.
+    /// </summary>
     public const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.fff";
 
     /// <summary>Registers the handlers with Dapper. Nullable Guid and DateTime are covered too.</summary>
@@ -30,10 +33,14 @@ public static class SqliteTypeHandlers
     /// <param name="value">The value.</param>
     public static string ToText(Guid value) => value.ToString("D");
 
-    /// <summary>Converts a <see cref="DateTime"/> to the UTC text it is stored as.</summary>
+    /// <summary>
+    /// Converts a <see cref="DateTime"/> to the UTC text it is stored as. A value with
+    /// <see cref="DateTimeKind.Unspecified"/> is taken to be UTC already.
+    /// </summary>
     /// <param name="value">The value.</param>
     public static string ToText(DateTime value) =>
-        value.ToUniversalTime().ToString(DateTimeFormat, CultureInfo.InvariantCulture);
+        (value.Kind == DateTimeKind.Unspecified ? value : value.ToUniversalTime())
+        .ToString(DateTimeFormat, CultureInfo.InvariantCulture);
 
     private class GuidHandler : SqlMapper.TypeHandler<Guid>
     {

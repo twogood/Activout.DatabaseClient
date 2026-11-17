@@ -30,4 +30,13 @@ public class SqliteTypeHandlersTest
         Assert.Equal(created, thing.DeletedAt);
         Assert.Equal(parent, thing.ParentId);
     }
+
+    [Fact]
+    public void ToTextTreatsUnspecifiedKindAsUtc() =>
+        Assert.Equal("2026-01-01 12:00:00.000", SqliteTypeHandlers.ToText(new DateTime(2026, 1, 1, 12, 0, 0)));
+
+    [Fact]
+    public void ToTextDropsSubMillisecondTicks() =>
+        Assert.Equal("2026-01-01 12:00:00.123",
+            SqliteTypeHandlers.ToText(new DateTime(2026, 1, 1, 12, 0, 0, 123, DateTimeKind.Utc).AddTicks(4567)));
 }
