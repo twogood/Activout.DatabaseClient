@@ -6,6 +6,8 @@ namespace Activout.DatabaseClient.Attributes;
 /// Binds each public property of the parameter as an SQL parameter, both as <c>property</c>
 /// and as <c>parameter_property</c>, where either name can be changed with <see cref="BindAttribute"/>.
 /// The gateway adds any prefix, such as <c>@</c>. The parameter value must not be <c>null</c>.
+/// Bindings, including prefixed aliases, must not overlap other bindings, ignoring case.
+/// Overlaps throw <see cref="NotSupportedException"/> before execution.
 /// </summary>
 [AttributeUsage(AttributeTargets.Parameter)]
 public class BindPropertiesAttribute : Attribute
